@@ -1,2 +1,2 @@
 // See https://gradle.org
-rootProject.name = 'nosql-kv'
+rootProject.name = 'db-kv'

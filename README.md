@@ -1,17 +1,17 @@
-# 2018-nosql-kv
+# 2018-db-kv
 Курсовой проект 2018 года [курса](https://polis.mail.ru/curriculum/program/discipline/604/) "Использование баз данных" в [Технополис](https://polis.mail.ru).
 
 ## Этап 1. In-memory (deadline 2018-04-10)
 ### Fork
 [Форкните проект](https://help.github.com/articles/fork-a-repo/), склонируйте и добавьте `upstream`:
 ```
-$ git clone git@github.com:<username>/2018-nosql-kv.git
-Cloning into '2018-nosql-kv'...
+$ git clone git@github.com:<username>/2018-db-kv.git
+Cloning into '2018-db-kv'...
 ...
-$ cd 2018-nosql-kv
-$ git remote add upstream git@github.com:polis-mail-ru/2018-nosql-kv.git
+$ cd 2018-db-kv
+$ git remote add upstream git@github.com:polis-mail-ru/2018-db-kv.git
 $ git fetch upstream
-From github.com:polis-mail-ru/2018-nosql-kv
+From github.com:polis-mail-ru/2018-db-kv
  * [new branch]      master     -> upstream/master
 ```
 
