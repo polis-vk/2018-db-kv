@@ -17,38 +17,35 @@ public final class KVDaoFactory {
     }
 
     private static class KVDaoImpl implements KVDao{
-        private Map<ByteBuffer, byte[]> KVStorage;
+        private final Map<ByteBuffer, byte[]> storage;
 
         public KVDaoImpl() {
-            this.KVStorage = new HashMap<>();
+            this.storage = new HashMap<>();
         }
 
         @NotNull
         @Override
         public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-            final byte[] storedValue = this.KVStorage.get(ByteBuffer.wrap(key));
+            final byte[] storedValue = this.storage.get(ByteBuffer.wrap(key));
             if (storedValue == null) throw new NoSuchElementException();
             return storedValue;
         }
 
         @Override
         public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-            if (this.KVStorage.containsKey(ByteBuffer.wrap(key))){
-                this.KVStorage.replace(ByteBuffer.wrap(key), value);
-            } else {
-                this.KVStorage.put(ByteBuffer.wrap(key), value);
-            }
+            this.storage.put(ByteBuffer.wrap(key), value);
         }
 
         @Override
         public void remove(@NotNull byte[] key) throws IOException {
-            final byte[] value = this.KVStorage.remove(ByteBuffer.wrap(key));
-            if (value == null) throw new NoSuchElementException();
+//            final byte[] value = this.storage.remove(ByteBuffer.wrap(key));
+//            if (value == null) throw new NoSuchElementException();
+            this.storage.remove(ByteBuffer.wrap(key));
         }
 
         @Override
         public void close() throws IOException {
-            throw new UnsupportedOperationException();
+
         }
     }
 }
