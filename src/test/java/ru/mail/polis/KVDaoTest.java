@@ -23,6 +23,7 @@ public class KVDaoTest {
         final byte[] value = "value".getBytes();
         dao.upsert(key, value);
         Assert.assertArrayEquals(value, dao.get(key));
+        Assert.assertArrayEquals(value, dao.get("key".getBytes()));
     }
 
     @Test
@@ -33,17 +34,24 @@ public class KVDaoTest {
         final byte[] value2 = "value2".getBytes();
         dao.upsert(key, value1);
         Assert.assertArrayEquals(value1, dao.get(key));
+        Assert.assertArrayEquals(value1, dao.get("key".getBytes()));
         dao.upsert(key, value2);
         Assert.assertArrayEquals(value2, dao.get(key));
+        Assert.assertArrayEquals(value2, dao.get("key".getBytes()));
     }
 
     @Test(expected = NoSuchElementException.class)
-    public void remove() throws IOException {
+    public void remove() throws IOException, Exception {
         final KVDao dao = create();
         final byte[] key = "key".getBytes();
         final byte[] value = "value".getBytes();
         dao.upsert(key, value);
         Assert.assertArrayEquals(value, dao.get(key));
+        try {
+            Assert.assertArrayEquals(value, dao.get("key".getBytes()));
+        } catch (NoSuchElementException nSEE) {
+            throw new Exception();
+        }
         dao.remove(key);
         dao.get(key);
     }
