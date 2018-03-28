@@ -3,6 +3,7 @@ package ru.mail.polis;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public final class KVDaoFactory {
@@ -16,7 +17,7 @@ public final class KVDaoFactory {
     }
 
     private static class KVDaoImpl implements KVDao{
-        private Map<byte[], byte[]> KVStorage;
+        private Map<ByteBuffer, byte[]> KVStorage;
 
         public KVDaoImpl() {
             this.KVStorage = new HashMap<>();
@@ -25,19 +26,23 @@ public final class KVDaoFactory {
         @NotNull
         @Override
         public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-            final byte[] storedValue = this.KVStorage.get(key);
+            final byte[] storedValue = this.KVStorage.get(ByteBuffer.wrap(key));
             if (storedValue == null) throw new NoSuchElementException();
             return storedValue;
         }
 
         @Override
         public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-            final byte[] storedValue = this.KVStorage.put(key, value);
+            if (this.KVStorage.containsKey(ByteBuffer.wrap(key))){
+                this.KVStorage.replace(ByteBuffer.wrap(key), value);
+            } else {
+                this.KVStorage.put(ByteBuffer.wrap(key), value);
+            }
         }
 
         @Override
         public void remove(@NotNull byte[] key) throws IOException {
-            final byte[] value = this.KVStorage.remove(key);
+            final byte[] value = this.KVStorage.remove(ByteBuffer.wrap(key));
             if (value == null) throw new NoSuchElementException();
         }
 
