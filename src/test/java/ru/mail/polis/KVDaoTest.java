@@ -57,6 +57,31 @@ public class KVDaoTest {
     }
 
     @Test
+    public void nonHash() throws IOException {
+        // Different byte arrays
+        final byte[] a1 = new byte[]{(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x1F};
+        final byte[] a2 = new byte[]{(byte) 0x00, (byte) 0x00, (byte) 0x01, (byte) 0x00};
+        Assert.assertFalse(Arrays.equals(a1, a2));
+
+        // But hash codes are equal
+        Assert.assertEquals(Arrays.hashCode(a1), Arrays.hashCode(a2));
+
+        final KVDao dao = create();
+
+        // Put a1 value
+        final byte[] value = "value".getBytes();
+        dao.upsert(a1, value);
+
+        // Check that a2 value is absent
+        try {
+            dao.get(a2);
+            Assert.fail();
+        } catch (NoSuchElementException e) {
+            // OK
+        }
+    }
+
+    @Test
     public void insert() throws IOException {
         final KVDao dao = create();
         final byte[] key = "key".getBytes();
