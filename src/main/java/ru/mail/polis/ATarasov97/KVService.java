@@ -1,8 +1,8 @@
 package ru.mail.polis.ATarasov97;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -14,14 +14,10 @@ import ru.mail.polis.KVDao;
 
 public class KVService implements KVDao {
 
-    private final Map<String, byte[]> data = new HashMap<>();
+    private final Map<ByteBuffer, byte[]> data = new HashMap<>();
 
-    private String wrapKey(byte[] key) {
-        StringBuilder builder = new StringBuilder();
-        for (byte value : key) {
-            builder.append(value);
-        }
-        return builder.toString();
+    private ByteBuffer wrapKey(byte[] key) {
+        return ByteBuffer.wrap(key);
     }
 
     @NotNull
