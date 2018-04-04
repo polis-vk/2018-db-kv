@@ -3,41 +3,38 @@ package ru.mail.polis.sudzhaev;
 import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.KVDao;
 
-import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class KVDaoImpl implements KVDao {
 
-    private final Map<BigInteger, byte[]> map = new HashMap<>();
+    private final Map<ByteBuffer, byte[]> map = new HashMap<>();
 
-    private BigInteger serializeKey(byte[] key) {
-        return new BigInteger(key);
+    private ByteBuffer serializeKey(byte[] key) {
+        return ByteBuffer.wrap(key);
     }
 
     @NotNull
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException {
-        BigInteger strKey = serializeKey(key);
-        if (!map.containsKey(strKey)) throw new NoSuchElementException();
-        return map.get(strKey);
+        byte[] bytes = map.get(serializeKey(key));
+        if (bytes == null) throw new NoSuchElementException();
+        return bytes;
     }
 
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) {
-        BigInteger strKey = serializeKey(key);
-        map.put(strKey, value);
+        map.put(serializeKey(key), value);
     }
 
     @Override
     public void remove(@NotNull byte[] key) {
-        BigInteger strKey = serializeKey(key);
-        map.remove(strKey);
+        map.remove(serializeKey(key));
     }
 
     @Override
     public void close() {
-        map.clear();
     }
 }
