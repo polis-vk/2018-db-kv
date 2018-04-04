@@ -3,17 +3,16 @@ package ru.mail.polis.sudzhaev;
 import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.KVDao;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class KVDaoImpl implements KVDao {
 
-    private final Map<ByteBuffer, byte[]> map = new HashMap<>();
+    private final Map<ByteWrapper, byte[]> map = new HashMap<>();
 
-    private ByteBuffer serializeKey(byte[] key) {
-        return ByteBuffer.wrap(key);
+    private ByteWrapper serializeKey(byte[] key) {
+        return new ByteWrapper(key);
     }
 
     @NotNull
