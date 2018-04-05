@@ -10,7 +10,7 @@ import ru.mail.polis.KVDao;
 
 public class KVDaoImpl implements KVDao {
 
-    HashMap<ByteArray,byte[]> data;
+    private final HashMap<ByteArray,byte[]> data;
     public KVDaoImpl(){
         data = new HashMap<>();
     }
@@ -18,20 +18,17 @@ public class KVDaoImpl implements KVDao {
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
         ByteArray k = new ByteArray(key);
-        if(data.get(k)==null){
+        byte[] res=data.get(k);
+        if(res==null){
             throw new NoSuchElementException();
         }
-        return data.get(k);
+        return res;
     }
 
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
         ByteArray k = new ByteArray(key);
-        if(data.containsKey(k)){
-            data.replace(k,value);
-        } else {
-            data.put(k,value);
-        }
+        data.put(k,value);
     }
 
     @Override
