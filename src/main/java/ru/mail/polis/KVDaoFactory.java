@@ -11,6 +11,6 @@ public final class KVDaoFactory {
 
     @NotNull
     public static KVDao create() throws IOException {
-        throw new UnsupportedOperationException("Implement me");
+        return new KVDaoImpl();
     }
 }
