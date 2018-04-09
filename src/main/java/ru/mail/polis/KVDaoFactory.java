@@ -12,7 +12,7 @@ public final class KVDaoFactory {
     }
 
     @NotNull
-    public static KVDao create() throws IOException, SQLException {
+    public static KVDao create() throws IOException {
         return new Dao();
     }
 
