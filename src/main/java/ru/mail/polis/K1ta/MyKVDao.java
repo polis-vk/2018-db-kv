@@ -4,17 +4,17 @@ import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.KVDao;
 
 import java.io.IOException;
-import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
 public class MyKVDao implements KVDao {
-    HashMap<BigInteger, byte[]> map = new HashMap<>();
+    HashMap<ByteBuffer, byte[]> map = new HashMap<>();
 
     @NotNull
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-        BigInteger _key = new BigInteger(key);
+        ByteBuffer _key = ByteBuffer.wrap(key);
         byte[] val = map.get(_key);
         if (val == null) {
             throw new NoSuchElementException();
@@ -24,13 +24,13 @@ public class MyKVDao implements KVDao {
 
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-        BigInteger _key = new BigInteger(key);
+        ByteBuffer _key = ByteBuffer.wrap(key);
         map.put(_key, value);
     }
 
     @Override
     public void remove(@NotNull byte[] key) throws IOException {
-        BigInteger _key = new BigInteger(key);
+        ByteBuffer _key = ByteBuffer.wrap(key);
         map.remove(_key);
     }
 
