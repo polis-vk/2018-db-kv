@@ -15,11 +15,11 @@ public class KVDaoImpl implements KVDao {
     @NotNull
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-        ByteArrayWrapper byteKey = new ByteArrayWrapper(key);
-        if(!map.containsKey(byteKey)){
+        byte[] value = map.get(new ByteArrayWrapper(key));
+        if(value == null){
             throw new NoSuchElementException();
         }
-        return map.get(byteKey);
+        return value;
     }
 
     @Override
