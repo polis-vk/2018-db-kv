@@ -20,6 +20,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Custom {@link KVDao} factory
@@ -41,9 +45,9 @@ public final class KVDaoFactory {
      */
     @NotNull
     public static KVDao create(@NotNull final File data) throws IOException {
-        if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
-            throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
-        }
+//        if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
+//            throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
+//        }
 
         if (!data.exists()) {
             throw new IllegalArgumentException("Path doesn't exist: " + data);
@@ -53,7 +57,47 @@ public final class KVDaoFactory {
             throw new IllegalArgumentException("Path is not a directory: " + data);
         }
 
-        // TODO: Implement me
-        throw new UnsupportedOperationException("Implement me!");
+        return new KVDaoImpl(data);
+    }
+
+    private class StoredItem {
+        //implement me
+    }
+
+    private static class KVDaoImpl implements KVDao {
+        final private String dirWithSep;
+
+        private final Map<ByteBuffer, StoredItem> storage;
+
+        public KVDaoImpl(File dir) {
+            dirWithSep = dir + File.separator;
+            storage = new HashMap<>();
+        }
+
+        @NotNull
+        @Override
+        public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
+            final StoredItem storedValue = this.storage.get(ByteBuffer.wrap(key));
+            if (storedValue == null) throw new NoSuchElementException();
+            return storedValue;
+        }
+
+        @Override
+        public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
+            this.storage.put(ByteBuffer.wrap(key), value);
+
+        }
+
+        @Override
+        public void remove(@NotNull byte[] key) throws IOException {
+//            final byte[] value = this.storage.remove(ByteBuffer.wrap(key));
+//            if (value == null) throw new NoSuchElementException();
+            this.storage.remove(ByteBuffer.wrap(key));
+        }
+
+        @Override
+        public void close() throws IOException {
+
+        }
     }
 }
