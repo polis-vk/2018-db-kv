@@ -41,7 +41,10 @@ public final class KVDaoFactory {
      */
     @NotNull
     public static KVDao create(@NotNull final File data) throws IOException {
-        if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
+
+        return new KVDaoImpl();
+
+        /*if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
             throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
         }
 
@@ -54,6 +57,7 @@ public final class KVDaoFactory {
         }
 
         // TODO: Implement me
-        throw new UnsupportedOperationException("Implement me!");
+        throw new UnsupportedOperationException("Implement me!");*/
     }
 }
+
