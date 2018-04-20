@@ -20,7 +20,8 @@ public class KVDaoImpl implements KVDao {
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
         ByteBuffer wrappedKey = ByteBuffer.wrap(key);
-        if (!data.containsKey(wrappedKey)) throw new NoSuchElementException();
+        byte[] result = data.get(wrappedKey);
+        if (result == null) throw new NoSuchElementException();
         return data.get(wrappedKey);
     }
 
