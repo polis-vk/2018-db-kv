@@ -111,7 +111,7 @@ public final class KVDaoFactory {
             if (item == null) {
                 //creating new item and putting into container
                 try {
-                    this.storage.put(ByteBuffer.wrap(key), new StoredValue(value, createAndPut(key, value)));
+                    this.storage.put(ByteBuffer.wrap(key), new StoredValue(value, create(key, value)));
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.exit(1);
@@ -131,9 +131,10 @@ public final class KVDaoFactory {
 
         @Override
         public void remove(@NotNull byte[] key) throws IOException {
-//            final byte[] value = this.storage.remove(ByteBuffer.wrap(key));
-//            if (value == null) throw new NoSuchElementException();
-            this.storage.remove(ByteBuffer.wrap(key));
+            final StoredValue item = this.storage.remove(ByteBuffer.wrap(key));
+            if (item != null) {
+                delete(item.getContainer(), key);
+            } else throw new NoSuchElementException();
         }
 
         @Override
@@ -141,7 +142,7 @@ public final class KVDaoFactory {
 
         }
 
-        private String createAndPut(byte[] key, byte[] value) throws IOException {
+        private String create(byte[] key, byte[] value) throws IOException {
             long timeStamp = System.currentTimeMillis();
             return Long.toString(timeStamp);
         }
