@@ -45,6 +45,10 @@ import sun.misc.BASE64Decoder;
  */
 public final class KVDaoFactory {
     private static final long MAX_HEAP = 128 * 1024 * 1024;
+    /*
+    * In bytes
+    * */
+    final private static int fileSize = 4;
 
     private KVDaoFactory() {
         // Not instantiatable
@@ -70,7 +74,7 @@ public final class KVDaoFactory {
             throw new IllegalArgumentException("Path is not a directory: " + data);
         }
 
-        return new KVDaoImpl(data, 500);
+        return new KVDaoImpl(data, fileSize);
     }
 
     private static class StoredValue {
@@ -101,11 +105,13 @@ public final class KVDaoFactory {
         final private String KV_SPLITTER = "-";
         final private String ENDLINE = "\n";
         final private int KBYTE = 1024;
+        final private int cacheSize = 300;
 
         final private int TRASH_HOLD;
         final private String STORAGE_DIR;
         final private Map<ByteBuffer, Long> storage = new HashMap<>();;
         final private Queue<Long> filesQueue = new LinkedList<>();
+        final private FileCache cache;
 
         private Long fileNumber = new Long(0);
 
@@ -115,6 +121,7 @@ public final class KVDaoFactory {
         public KVDaoImpl(final File dir, final int chunkSize) {
             this.STORAGE_DIR = dir + File.separator;
             this.TRASH_HOLD = chunkSize * KBYTE;
+            this.cache = new FileCache(STORAGE_DIR, this.cacheSize);
             try {
                 java.nio.file.Files.walkFileTree(
                         dir.toPath(),
@@ -144,9 +151,10 @@ public final class KVDaoFactory {
         @NotNull
         @Override
         public byte[] get(@NotNull byte[] key) throws IOException, NoSuchElementException {
-            Long container = this.storage.get(ByteBuffer.wrap(key));
-            if (container == null) throw new NoSuchElementException();
-            return new FileHolder(new File(STORAGE_DIR +container.toString())).get(key);
+            Long srcLong = this.storage.get(ByteBuffer.wrap(key));
+            if (srcLong == null) throw new NoSuchElementException();
+            return cache.getFileHolder(srcLong).get(key);
+//            return new FileHolder(new File(STORAGE_DIR +container.toString())).get(key);
         }
 
         @Override
@@ -158,12 +166,17 @@ public final class KVDaoFactory {
                     distLong = this.fileNumber++;
                     File distFile = new File(STORAGE_DIR + Long.toString(distLong));
                     distFile.createNewFile();
-                    new FileHolder(distFile).upsert(key, value);
+                    cache.getFileHolder(distLong)
+                            .upsert(key, value);
+//                    new FileHolder(distFile).upsert(key, value);
+
                     this.storage.put(ByteBuffer.wrap(key), distLong);
                     if (distFile.length() < TRASH_HOLD) filesQueue.add(distLong);
                 } else {
                     File distFile = new File(STORAGE_DIR + Long.toString(containerCandidate));
-                    new FileHolder(distFile)
+//                    new FileHolder(distFile)
+//                            .upsert(key, value);
+                    cache.getFileHolder(containerCandidate)
                             .upsert(key, value);
                     this.storage.put(ByteBuffer.wrap(key), containerCandidate);
                     if (distFile.length() >= TRASH_HOLD)
@@ -172,15 +185,19 @@ public final class KVDaoFactory {
             } else {
                 File distFile = new File(STORAGE_DIR + Long.toString(distLong));
                 if (!distFile.canRead() || !distFile.exists()) throw new IOException();
-                new FileHolder(distFile).upsert(key, value);
+//                new FileHolder(distFile).upsert(key, value);
+                cache.getFileHolder(distLong).upsert(key, value);
             }
         }
 
         @Override
         public void remove(@NotNull byte[] key) throws IOException, NoSuchElementException {
-            File dist = new File(STORAGE_DIR + this.storage.get(ByteBuffer.wrap(key)).toString());
-            if (!dist.exists() || !dist.canRead()) throw new IOException();
-            new FileHolder(dist).remove(key);
+            Long distLong = this.storage.get(ByteBuffer.wrap(key));
+            if (distLong == null) throw new NoSuchElementException();
+//            File dist = new File(STORAGE_DIR + distLong.toString());
+//            if (!dist.exists() || !dist.canRead()) throw new IOException();
+//            new FileHolder(dist).remove(key);
+            cache.getFileHolder(distLong).remove(key);
             this.storage.remove(ByteBuffer.wrap(key));
         }
 
@@ -199,25 +216,51 @@ public final class KVDaoFactory {
         }
     }
 
+    private static class FileCache {
+        private FileHolder[] holders;
+        private int index = 0;
+        final private String DIR_PREFIX;
+
+        public FileCache(final String dirPrefix, int cacheSize) {
+            if (cacheSize < 1) throw new IllegalArgumentException();
+            this.holders = new FileHolder[cacheSize];
+            this.DIR_PREFIX = dirPrefix;
+        }
+
+        public FileHolder getFileHolder(Long fileName) throws IOException{
+            for (FileHolder holder :
+                    this.holders) {
+                if (holder == null) continue;
+                if (holder.getName().equals(fileName)) {
+                    return holder;
+                }
+            }
+            FileHolder holder = new FileHolder(
+                    new File(DIR_PREFIX
+                            + fileName.toString()));
+            this.holders[this.index++] = holder;
+            this.index %= (this.holders.length - 1);
+            return holder;
+        }
+    }
+
     private static class FileHolder {
         private final long MIN_FILE_LENGTH = Integer.BYTES * 2 + Byte.BYTES * 2;
 
         private final File source;
+        private final Long sourceNameAsLong;
         private long size;
         private Map<ByteBuffer, byte[]>map;
 
-        public FileHolder(final File src) throws StreamCorruptedException, FileNotFoundException, IOException{
+        public FileHolder(final File src) throws StreamCorruptedException, FileNotFoundException, IOException {
             if (!src.exists()) throw new FileNotFoundException();
             else if (!src.isFile() || !src.canRead()) throw new IOException();
-            if (src.length() == 0) {
-                this.source = src;
-                this.size = src.length();
-                this.map = new LinkedHashMap();
-            } else {
+            this.source = src;
+            this.size = src.length();
+            this.sourceNameAsLong = Long.parseLong(this.source.getName());
+            this.map = new LinkedHashMap();
+            if (src.length() != 0) {
                 if (src.length() >= MIN_FILE_LENGTH) {
-                    this.source = src;
-                    this.size = src.length();
-                    this.map = new LinkedHashMap();
                     InputStream inputStream = new FileInputStream(this.source);
                     long index = -1;
                     while (index < this.size - 1) {
@@ -240,8 +283,13 @@ public final class KVDaoFactory {
                                 bytes);
                     }
                     inputStream.close();
-                } else throw new StreamCorruptedException();
+                } else
+                    throw new StreamCorruptedException();
             }
+        }
+
+        public Long getName() {
+            return sourceNameAsLong;
         }
 
         public byte[] get(byte[] key) {
@@ -283,7 +331,7 @@ public final class KVDaoFactory {
             }
         }
 
-        private static int getInt(byte[] bytes) {
+        private int getInt(byte[] bytes) {
             ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
             byteBuffer.order(ByteOrder.BIG_ENDIAN);
             return byteBuffer.getInt(0);
