@@ -16,27 +16,17 @@
 
 package ru.mail.polis;
 
-import com.sun.org.apache.xerces.internal.impl.io.MalformedByteSequenceException;
 import org.jetbrains.annotations.NotNull;
-import org.omg.CosNaming.NamingContextPackage.NotFound;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.FileVisitResult;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.BiConsumer;
-
-import javax.xml.bind.DatatypeConverter;
-
-import com.sun.javafx.util.Utils;
-
-import jdk.internal.util.xml.impl.Input;
-import sun.misc.BASE64Decoder;
 
 /**
  * Custom {@link KVDao} factory
@@ -62,9 +52,9 @@ public final class KVDaoFactory {
      */
     @NotNull
     public static KVDao create(@NotNull final File data) throws IOException {
-//        if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
-//            throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
-//        }
+        if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
+            throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
+        }
 
         if (!data.exists()) {
             throw new IllegalArgumentException("Path doesn't exist: " + data);
@@ -129,9 +119,12 @@ public final class KVDaoFactory {
                             private void fetchData(@NotNull final Path file) throws IOException {
                                 Long srcLong = Long.parseLong(file.toFile().getName());
                                 if (srcLong >= fileNumber) fileNumber = new Long(srcLong+1);
-                                new FileHolder(file.toFile()).forEach((byteBuffer, bytes) -> {
+                                cache.getFileHolder(srcLong).forEach((byteBuffer, bytes) -> {
                                     storage.put(byteBuffer, srcLong);
                                 });
+//                                new FileHolder(file.toFile()).forEach((byteBuffer, bytes) -> {
+//                                    storage.put(byteBuffer, srcLong);
+//                                });
                             }
 
                             @NotNull
@@ -239,7 +232,7 @@ public final class KVDaoFactory {
                     new File(DIR_PREFIX
                             + fileName.toString()));
             this.holders[this.index++] = holder;
-            this.index %= (this.holders.length - 1);
+            this.index %= this.holders.length;
             return holder;
         }
     }
