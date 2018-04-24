@@ -16,27 +16,20 @@
 
 package ru.mail.polis;
 
+import com.sun.org.apache.xerces.internal.impl.io.MalformedByteSequenceException;
 import org.jetbrains.annotations.NotNull;
 import org.omg.CosNaming.NamingContextPackage.NotFound;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.FileVisitResult;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -111,8 +104,10 @@ public final class KVDaoFactory {
 
         final private int TRASH_HOLD;
         final private String STORAGE_DIR;
-        private final Map<ByteBuffer, StoredValue> storage;
-        private final Queue<File> filesQueue = new LinkedList<>();
+        final private Map<ByteBuffer, Long> storage = new HashMap<>();;
+        final private Queue<Long> filesQueue = new LinkedList<>();
+
+        private Long fileNumber = new Long(0);
 
         /*
         * Chunk size in kbytes
@@ -120,42 +115,22 @@ public final class KVDaoFactory {
         public KVDaoImpl(final File dir, final int chunkSize) {
             this.STORAGE_DIR = dir + File.separator;
             this.TRASH_HOLD = chunkSize * KBYTE;
-            this.storage = new HashMap<>();
             try {
                 java.nio.file.Files.walkFileTree(
                         dir.toPath(),
                         new SimpleFileVisitor<Path>() {
                             private void fetchData(@NotNull final Path file) throws IOException {
-                                if (!file.toFile().canRead()) return;
-                                InputStream inputStream = new FileInputStream(file.toFile());
-                                //reading stored chunk through container
-                                String chunk = "";
-                                byte[] buffer = new byte[TRASH_HOLD / 4];
-                                int len;
-                                while ((len = inputStream.read(buffer)) != -1) {
-                                    chunk += new String(buffer);
-//                                    for (int i = 0; i < len; i++)
-//                                        chunk += (char)buffer[i];
-                                }
-                                inputStream.close();
-                                String[] items = chunk.split(ENDLINE);
-                                for (String item :
-                                        items) {
-                                    String[] parts = item.split(KV_SPLITTER);
-                                    if (parts.length == 2) {
-                                        storage.put(ByteBuffer.wrap(Base64.getDecoder().decode(parts[0].getBytes())),
-                                                new StoredValue(Base64.getDecoder().decode(parts[1].getBytes()),
-                                                        file.toFile()));
-                                    }
-                                }
-                                if (chunk.length() < TRASH_HOLD) filesQueue.add(file.toFile());
+                                Long srcLong = Long.parseLong(file.toString());
+                                if (srcLong >= fileNumber) fileNumber = new Long(srcLong+1);
+                                new FileHolder(file.toFile()).forEach((byteBuffer, bytes) -> {
+                                    storage.put(byteBuffer, srcLong);
+                                });
                             }
 
                             @NotNull
                             @Override
                             public FileVisitResult visitFile(@NotNull final Path file, @NotNull final BasicFileAttributes attrs)
                                     throws IOException {
-                                System.out.println(file.getFileName());
                                 fetchData(file);
                                 return FileVisitResult.CONTINUE;
                             }
@@ -168,42 +143,42 @@ public final class KVDaoFactory {
 
         @NotNull
         @Override
-        public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-            final StoredValue storedValue = this.storage.get(ByteBuffer.wrap(key));
-            if (storedValue == null) throw new NoSuchElementException();
-            return storedValue.getBytes();
+        public byte[] get(@NotNull byte[] key) throws IOException, NoSuchElementException {
+            final byte[] bytes = new FileHolder(new File(STORAGE_DIR + this.storage.get(ByteBuffer.wrap(key)).toString())).get(key);
+            if (bytes == null) throw new NoSuchElementException();
+            return bytes;
         }
 
         @Override
         public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-            StoredValue item = this.storage.get(ByteBuffer.wrap(key));
-            if (item == null) {
-                //creating new item and putting into container
-                try {
-                    this.storage.put(ByteBuffer.wrap(key), new StoredValue(value, create(key, value)));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
+            Long distLong = this.storage.get(ByteBuffer.wrap(key));
+            if (distLong == null) {
+                Long containerCandidate = getContainer();
+                if (containerCandidate == null) {
+                    distLong = this.fileNumber++;
+                    File distFile = new File(STORAGE_DIR + Long.toString(distLong));
+                    distFile.createNewFile();
+                    new FileHolder(distFile).upsert(key, value);
+                    this.storage.put(ByteBuffer.wrap(key), distLong);
+                    if (distFile.length() < TRASH_HOLD) filesQueue.add(distLong);
+                } else {
+                    File distFile = new File(STORAGE_DIR + Long.toString(containerCandidate));
+                    new FileHolder(distFile).upsert(key, value);
+                    this.storage.put(ByteBuffer.wrap(key), distLong);
+                    if (distFile.length() >= TRASH_HOLD) filesQueue.remove();
                 }
             } else {
-                //update value in storage and container
-                try {
-                    update(item.getContainer(), key, value);
-                    item.setBytes(value);
-                    this.storage.put(ByteBuffer.wrap(key), item);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
+                File distFile = new File(STORAGE_DIR + Long.toString(distLong));
+                if (!distFile.canRead() || !distFile.exists()) throw new IOException();
+                new FileHolder(distFile).upsert(key, value);
             }
         }
 
         @Override
-        public void remove(@NotNull byte[] key) throws IOException {
-            final StoredValue item = this.storage.remove(ByteBuffer.wrap(key));
-            if (item != null) {
-                delete(item.getContainer(), key);
-            } else throw new NoSuchElementException();
+        public void remove(@NotNull byte[] key) throws IOException, NoSuchElementException {
+            File dist = new File(STORAGE_DIR + this.storage.get(ByteBuffer.wrap(key)).toString());
+            if (!dist.exists() || !dist.canRead()) throw new IOException();
+            new FileHolder(dist).remove(key);
         }
 
         @Override
@@ -211,99 +186,101 @@ public final class KVDaoFactory {
 
         }
 
-        private File create(byte[] key, byte[] value) throws IOException {
-            if (filesQueue.size() == 0) {
-                File container = new File(STORAGE_DIR + Long.toString(System.currentTimeMillis()));
-                container.createNewFile();
-                OutputStream outputStream = new FileOutputStream(container, false);
-                outputStream.write((Base64.getEncoder().encodeToString(key) + KV_SPLITTER + Base64.getEncoder().encodeToString(value) + ENDLINE).getBytes());
-                outputStream.flush(); outputStream.close();
-                if (container.length()  < TRASH_HOLD) this.filesQueue.add(container);
-                return container;
-            } else {
-                File container = this.filesQueue.remove();
-                OutputStream outputStream = new FileOutputStream(container, true);
-                outputStream.write((Base64.getEncoder().encodeToString(key) + KV_SPLITTER + Base64.getEncoder().encodeToString(value) + ENDLINE).getBytes());
-                outputStream.flush(); outputStream.close();
-                if (container.length() < TRASH_HOLD) this.filesQueue.add(container);
-                return container;
+        private Long getContainer(){
+            while(true) {
+                if (this.filesQueue.size() == 0) return null;
+                Long candidate = this.filesQueue.peek();
+                if (new File(candidate.toString()).length() < TRASH_HOLD) return candidate;
+                else this.filesQueue.remove();
             }
-
-        }
-
-        private void update(File container, byte[] key, byte[] value) throws IOException {
-            InputStream inputStream = new FileInputStream(container);
-            //reading stored chunk through container
-            String chunk = "";
-            byte[] buffer = new byte[256];
-            int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-//                for (int i = 0; i < len; i++)
-//                    chunk += (char)buffer[i];
-                chunk += new String(buffer);
-            }
-            inputStream.close();
-            OutputStream outputStream = new FileOutputStream(container, false);
-            String[] items = chunk.split(ENDLINE);
-            boolean updated = false;
-            for (String item :
-                    items) {
-                if (updated) {
-                    outputStream.write((item.getBytes() + ENDLINE).getBytes());
-                    continue;
-                }
-                String[] parts = item.split(KV_SPLITTER);
-                if (parts.length != 2) continue;
-                byte[] decodedKey = Base64.getDecoder().decode(parts[0].getBytes());
-                if (Arrays.equals(key, decodedKey)) {
-                    outputStream.write((parts[0].getBytes() + KV_SPLITTER + Base64.getEncoder().encode(value) + ENDLINE).getBytes());
-                    updated = true;
-                    continue;
-                } else {
-                    outputStream.write((item.getBytes() + ENDLINE).getBytes());
-                    continue;
-                }
-            }
-            outputStream.flush(); outputStream.close();
-        }
-
-        private void delete(File container, byte[] key) throws IOException {
-            InputStream inputStream = new FileInputStream(container);
-            //reading stored chunk through container
-            String chunk = "";
-            byte[] buffer = new byte[256];
-            int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-//                for (int i = 0; i < len; i++)
-//                    chunk += (char)buffer[i];
-                chunk += new String(buffer);
-            }
-            inputStream.close();
-            boolean containerIsInQueue = false;
-            if (chunk.length() < TRASH_HOLD) containerIsInQueue = true;
-            OutputStream outputStream = new FileOutputStream(container, false);
-            String[] items = chunk.split(ENDLINE);
-            boolean deleted = false;
-            for (String item :
-                    items) {
-                if (deleted) {
-                    outputStream.write((item.getBytes() + ENDLINE).getBytes());
-                    continue;
-                }
-                String[] parts = item.split(KV_SPLITTER);
-                if (parts.length != 2) continue;
-                byte[] decodedKey = Base64.getEncoder().encode(parts[0].getBytes());
-                if (Arrays.equals(key, decodedKey)) {
-                    deleted = true;
-                    continue;
-                } else {
-                    outputStream.write((item.getBytes() + ENDLINE).getBytes());
-                    continue;
-                }
-            }
-            outputStream.flush(); outputStream.close();
-            if (!containerIsInQueue)
-                if (container.length() < TRASH_HOLD) filesQueue.add(container);
         }
     }
+
+    private static class FileHolder {
+        private final long MIN_FILE_LENGTH = Integer.BYTES * 2 + Byte.BYTES * 2;
+
+        private final File source;
+        private long size;
+        private Map<ByteBuffer, byte[]>map;
+
+        public FileHolder(final File src) throws StreamCorruptedException, FileNotFoundException, IOException{
+            if (!src.exists()) throw new FileNotFoundException();
+            else if (!src.isFile() || !src.canRead()) throw new IOException();
+            if (src.length() == 0) {
+                this.source = src;
+                this.size = src.length();
+                this.map = new LinkedHashMap();
+            } else {
+                if (src.length() >= MIN_FILE_LENGTH) {
+                    this.source = src;
+                    this.size = src.length();
+                    InputStream inputStream = new FileInputStream(this.source);
+                    long index = -1;
+                    while (index <= this.size - 1) {
+                        byte[] bytes = new byte[Integer.BYTES];
+                        if (inputStream.read(bytes) != Integer.BYTES) throw new IOException();
+                        index += Integer.BYTES;
+                        int keyLength = getInt(bytes);
+                        if (inputStream.read(bytes) != Integer.BYTES) throw new IOException();
+                        index += Integer.BYTES;
+                        int valueLength = getInt(bytes);
+                        bytes = null;
+                        byte[] key = new byte[keyLength];
+                        if (inputStream.read(key) != keyLength) throw new IOException();
+                        index += keyLength;
+                        byte[] value = new byte[valueLength];
+                        if (inputStream.read(value) != valueLength) throw new IOException();
+                        index += valueLength;
+                        this.map.put(ByteBuffer.wrap(bytes), value);
+                    }
+                    inputStream.close();
+                } else throw new StreamCorruptedException();
+            }
+        }
+
+        public byte[] get(byte[] key) {
+            return this.map.get(ByteBuffer.wrap(key));
+        }
+
+        public void upsert(byte[] key, byte[] value) throws IOException{
+            this.map.put(ByteBuffer.wrap(key), value);
+            flush();
+        }
+
+        public void remove(byte[] key) throws IOException, NoSuchElementException{
+            if (this.map.remove(ByteBuffer.wrap(key)) == null) throw new NoSuchElementException();
+            flush();
+        }
+
+        public void forEach(BiConsumer<ByteBuffer, byte[]> consumer) {
+            this.map.forEach(consumer);
+        }
+
+        private void flush() throws IOException{
+            final OutputStream outputStream = new FileOutputStream(source, false);
+            try {
+                this.map.forEach((byteBuffer, bytes) -> {
+                    try {
+                        outputStream.write(byteBuffer.capacity());
+                        outputStream.write(bytes.length);
+                        outputStream.write(byteBuffer.get());
+                        outputStream.write(bytes);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                });
+            } finally {
+                outputStream.flush();
+                outputStream.close();
+            }
+        }
+
+        private static int getInt(byte[] bytes) {
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            return byteBuffer.getInt(0);
+        }
+    }
+
 }
