@@ -120,7 +120,7 @@ public final class KVDaoFactory {
                         dir.toPath(),
                         new SimpleFileVisitor<Path>() {
                             private void fetchData(@NotNull final Path file) throws IOException {
-                                Long srcLong = Long.parseLong(file.toString());
+                                Long srcLong = Long.parseLong(file.toFile().getName());
                                 if (srcLong >= fileNumber) fileNumber = new Long(srcLong+1);
                                 new FileHolder(file.toFile()).forEach((byteBuffer, bytes) -> {
                                     storage.put(byteBuffer, srcLong);
@@ -144,9 +144,9 @@ public final class KVDaoFactory {
         @NotNull
         @Override
         public byte[] get(@NotNull byte[] key) throws IOException, NoSuchElementException {
-            final byte[] bytes = new FileHolder(new File(STORAGE_DIR + this.storage.get(ByteBuffer.wrap(key)).toString())).get(key);
-            if (bytes == null) throw new NoSuchElementException();
-            return bytes;
+            Long container = this.storage.get(ByteBuffer.wrap(key));
+            if (container == null) throw new NoSuchElementException();
+            return new FileHolder(new File(STORAGE_DIR +container.toString())).get(key);
         }
 
         @Override
@@ -163,9 +163,11 @@ public final class KVDaoFactory {
                     if (distFile.length() < TRASH_HOLD) filesQueue.add(distLong);
                 } else {
                     File distFile = new File(STORAGE_DIR + Long.toString(containerCandidate));
-                    new FileHolder(distFile).upsert(key, value);
-                    this.storage.put(ByteBuffer.wrap(key), distLong);
-                    if (distFile.length() >= TRASH_HOLD) filesQueue.remove();
+                    new FileHolder(distFile)
+                            .upsert(key, value);
+                    this.storage.put(ByteBuffer.wrap(key), containerCandidate);
+                    if (distFile.length() >= TRASH_HOLD)
+                        filesQueue.remove();
                 }
             } else {
                 File distFile = new File(STORAGE_DIR + Long.toString(distLong));
@@ -179,6 +181,7 @@ public final class KVDaoFactory {
             File dist = new File(STORAGE_DIR + this.storage.get(ByteBuffer.wrap(key)).toString());
             if (!dist.exists() || !dist.canRead()) throw new IOException();
             new FileHolder(dist).remove(key);
+            this.storage.remove(ByteBuffer.wrap(key));
         }
 
         @Override
@@ -214,9 +217,10 @@ public final class KVDaoFactory {
                 if (src.length() >= MIN_FILE_LENGTH) {
                     this.source = src;
                     this.size = src.length();
+                    this.map = new LinkedHashMap();
                     InputStream inputStream = new FileInputStream(this.source);
                     long index = -1;
-                    while (index <= this.size - 1) {
+                    while (index < this.size - 1) {
                         byte[] bytes = new byte[Integer.BYTES];
                         if (inputStream.read(bytes) != Integer.BYTES) throw new IOException();
                         index += Integer.BYTES;
@@ -224,14 +228,16 @@ public final class KVDaoFactory {
                         if (inputStream.read(bytes) != Integer.BYTES) throw new IOException();
                         index += Integer.BYTES;
                         int valueLength = getInt(bytes);
-                        bytes = null;
-                        byte[] key = new byte[keyLength];
-                        if (inputStream.read(key) != keyLength) throw new IOException();
+                        bytes = new byte[keyLength];
+                        if (inputStream.read(bytes) != keyLength) throw new IOException();
+                        final ByteBuffer keyBuffer = ByteBuffer.wrap(bytes);
                         index += keyLength;
-                        byte[] value = new byte[valueLength];
-                        if (inputStream.read(value) != valueLength) throw new IOException();
+                        bytes = new byte[valueLength];
+                        if (valueLength != 0)
+                            if (inputStream.read(bytes) != valueLength) throw new IOException();
                         index += valueLength;
-                        this.map.put(ByteBuffer.wrap(bytes), value);
+                        this.map.put(keyBuffer,
+                                bytes);
                     }
                     inputStream.close();
                 } else throw new StreamCorruptedException();
@@ -239,7 +245,8 @@ public final class KVDaoFactory {
         }
 
         public byte[] get(byte[] key) {
-            return this.map.get(ByteBuffer.wrap(key));
+                byte[] bytes = this.map.get(ByteBuffer.wrap(key));
+                return bytes;
         }
 
         public void upsert(byte[] key, byte[] value) throws IOException{
@@ -261,9 +268,9 @@ public final class KVDaoFactory {
             try {
                 this.map.forEach((byteBuffer, bytes) -> {
                     try {
-                        outputStream.write(byteBuffer.capacity());
-                        outputStream.write(bytes.length);
-                        outputStream.write(byteBuffer.get());
+                        outputStream.write(ByteBuffer.allocate(Integer.BYTES).putInt(byteBuffer.capacity()).array());
+                        outputStream.write(ByteBuffer.allocate(Integer.BYTES).putInt(bytes.length).array());
+                        outputStream.write(byteBuffer.array());
                         outputStream.write(bytes);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -278,7 +285,7 @@ public final class KVDaoFactory {
 
         private static int getInt(byte[] bytes) {
             ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            byteBuffer.order(ByteOrder.BIG_ENDIAN);
             return byteBuffer.getInt(0);
         }
     }

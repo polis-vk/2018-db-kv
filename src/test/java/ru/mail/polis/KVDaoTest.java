@@ -117,9 +117,6 @@ public class KVDaoTest extends TestBase {
         final byte[] key = randomKey();
         final byte[] value = randomValue();
         dao.upsert(key, value);
-//
-        System.out.println(key.length);
-//
         Assert.assertArrayEquals(value, dao.get(key));
         Assert.assertArrayEquals(value, dao.get(key.clone()));
     }
