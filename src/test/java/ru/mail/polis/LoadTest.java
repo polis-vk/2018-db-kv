@@ -46,7 +46,7 @@ public class LoadTest {
         return current.add(BigInteger.ONE);
     }
 
-    @Ignore("Per aspera ad astra")
+
     @Test
     public void bulkInsert() throws IOException {
         final int keys = 100_000;
@@ -59,6 +59,9 @@ public class LoadTest {
             // Fill the storage
             BigInteger value = initial;
             for (int i = 0; i < keys; i++) {
+                if (i % 100 == 0) {
+                    System.out.println(i);
+                }
                 dao.upsert(keyFrom(i), value.toByteArray());
                 value = next(value);
             }
@@ -78,7 +81,7 @@ public class LoadTest {
         }
     }
 
-    @Ignore("Just do it! (if you can)")
+
     @Test
     public void bulkReplace() throws IOException {
         final int keys = 10_000;
