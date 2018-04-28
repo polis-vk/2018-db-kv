@@ -64,67 +64,35 @@ public final class KVDaoFactory {
             throw new IllegalArgumentException("Path is not a directory: " + data);
         }
 
-        return new KVDaoImpl(data, fileSize);
-    }
-
-    private static class StoredValue {
-        private byte[] bytes;
-        final private File container;
-
-        public StoredValue(byte[] bytes, File container) {
-            this.bytes = bytes;
-            this.container = container;
-        }
-
-        public byte[] getBytes() {
-            return bytes;
-        }
-
-        public void setBytes(byte[] bytes) {
-            this.bytes = bytes;
-        }
-
-        public File getContainer() {
-            return container;
-        }
-
-        //implement me
+        return new KVDaoImpl(data);
     }
 
     private static class KVDaoImpl implements KVDao {
-        final private String KV_SPLITTER = "-";
-        final private String ENDLINE = "\n";
         final private int KBYTE = 1024;
-        final private int cacheSize = 300;
-
-        final private int TRASH_HOLD;
+        final private int MEM_TABLE_TRASH_HOLD = 300;
         final private String STORAGE_DIR;
-        final private Map<ByteBuffer, Long> storage = new HashMap<>();;
-        final private Queue<Long> filesQueue = new LinkedList<>();
-        final private FileCache cache;
 
-        private Long fileNumber = new Long(0);
+        final private SortedMap<ByteBuffer, byte[]> memTable = new TreeMap<>(new Comparator<ByteBuffer>() {
+            @Override
+            public int compare(ByteBuffer o1, ByteBuffer o2) {
+                return o1.compareTo(o2);
+            }
+        });
 
-        /*
-        * Chunk size in kbytes
-        */
-        public KVDaoImpl(final File dir, final int chunkSize) {
+        final private SnapshotHolder holder;
+
+        private Long memTablesize = 0L;
+
+        public KVDaoImpl(final File dir) {
             this.STORAGE_DIR = dir + File.separator;
-            this.TRASH_HOLD = chunkSize * KBYTE;
-            this.cache = new FileCache(STORAGE_DIR, this.cacheSize);
+            this.holder = new SnapshotHolder(this.STORAGE_DIR);
+
             try {
                 java.nio.file.Files.walkFileTree(
                         dir.toPath(),
                         new SimpleFileVisitor<Path>() {
                             private void fetchData(@NotNull final Path file) throws IOException {
-                                Long srcLong = Long.parseLong(file.toFile().getName());
-                                if (srcLong >= fileNumber) fileNumber = new Long(srcLong+1);
-                                cache.getFileHolder(srcLong).forEach((byteBuffer, bytes) -> {
-                                    storage.put(byteBuffer, srcLong);
-                                });
-//                                new FileHolder(file.toFile()).forEach((byteBuffer, bytes) -> {
-//                                    storage.put(byteBuffer, srcLong);
-//                                });
+
                             }
 
                             @NotNull
@@ -144,96 +112,82 @@ public final class KVDaoFactory {
         @NotNull
         @Override
         public byte[] get(@NotNull byte[] key) throws IOException, NoSuchElementException {
-            Long srcLong = this.storage.get(ByteBuffer.wrap(key));
-            if (srcLong == null) throw new NoSuchElementException();
-            return cache.getFileHolder(srcLong).get(key);
-//            return new FileHolder(new File(STORAGE_DIR +container.toString())).get(key);
+            byte[] value = this.memTable.get(ByteBuffer.wrap(key));
+            if (value == null) {
+                return this.holder.get(key);
+            } else {
+                if (value == SnapshotHolder.REMOVED_VALUE) {
+                    throw new NoSuchElementException();
+                } else {
+                    return value;
+                }
+            }
         }
 
         @Override
         public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-            Long distLong = this.storage.get(ByteBuffer.wrap(key));
-            if (distLong == null) {
-                Long containerCandidate = getContainer();
-                if (containerCandidate == null) {
-                    distLong = this.fileNumber++;
-                    File distFile = new File(STORAGE_DIR + Long.toString(distLong));
-                    distFile.createNewFile();
-                    cache.getFileHolder(distLong)
-                            .upsert(key, value);
-//                    new FileHolder(distFile).upsert(key, value);
-
-                    this.storage.put(ByteBuffer.wrap(key), distLong);
-                    if (distFile.length() < TRASH_HOLD) filesQueue.add(distLong);
-                } else {
-                    File distFile = new File(STORAGE_DIR + Long.toString(containerCandidate));
-//                    new FileHolder(distFile)
-//                            .upsert(key, value);
-                    cache.getFileHolder(containerCandidate)
-                            .upsert(key, value);
-                    this.storage.put(ByteBuffer.wrap(key), containerCandidate);
-                    if (distFile.length() >= TRASH_HOLD)
-                        filesQueue.remove();
-                }
-            } else {
-                File distFile = new File(STORAGE_DIR + Long.toString(distLong));
-                if (!distFile.canRead() || !distFile.exists()) throw new IOException();
-//                new FileHolder(distFile).upsert(key, value);
-                cache.getFileHolder(distLong).upsert(key, value);
+            this.memTable.put(ByteBuffer.wrap(key), value);
+            this.memTablesize += key.length + value.length;
+            if (memTablesize >= MEM_TABLE_TRASH_HOLD) {
+                this.holder.store(this.memTable);
+                this.memTable.clear();
+                this.memTablesize = 0L;
             }
         }
 
         @Override
         public void remove(@NotNull byte[] key) throws IOException, NoSuchElementException {
-            Long distLong = this.storage.get(ByteBuffer.wrap(key));
-            if (distLong == null) throw new NoSuchElementException();
-//            File dist = new File(STORAGE_DIR + distLong.toString());
-//            if (!dist.exists() || !dist.canRead()) throw new IOException();
-//            new FileHolder(dist).remove(key);
-            cache.getFileHolder(distLong).remove(key);
-            this.storage.remove(ByteBuffer.wrap(key));
+            byte[] value = this.memTable.get(ByteBuffer.wrap(key));
+            if (value != null) {
+                if (value == SnapshotHolder.REMOVED_VALUE) {
+                    throw new NoSuchElementException();
+                } else {
+                    this.memTable.put(ByteBuffer.wrap(key), SnapshotHolder.REMOVED_VALUE);
+                }
+            } else {
+                if (!this.holder.contains(key)) {
+                    throw new NoSuchElementException();
+                } else {
+                    this.memTable.put(ByteBuffer.wrap(key), SnapshotHolder.REMOVED_VALUE);
+                }
+            }
         }
 
         @Override
         public void close() throws IOException {
-
-        }
-
-        private Long getContainer(){
-            while(true) {
-                if (this.filesQueue.size() == 0) return null;
-                Long candidate = this.filesQueue.peek();
-                if (new File(candidate.toString()).length() < TRASH_HOLD) return candidate;
-                else this.filesQueue.remove();
-            }
+            this.holder.store(this.memTable);
         }
     }
 
-    private static class FileCache {
-        private FileHolder[] holders;
-        private int index = 0;
-        final private String DIR_PREFIX;
+    private static class SnapshotHolder {
+        final public static byte[] REMOVED_VALUE = new byte[0];
 
-        public FileCache(final String dirPrefix, int cacheSize) {
-            if (cacheSize < 1) throw new IllegalArgumentException();
-            this.holders = new FileHolder[cacheSize];
-            this.DIR_PREFIX = dirPrefix;
+        final private Map<ByteBuffer, Long> sSMap = new HashMap<>();
+        final private File storage;
+
+        private Long fileNumber = 0L;
+
+        public SnapshotHolder(String dir) {
+            this.storage = new File(dir);
         }
 
-        public FileHolder getFileHolder(Long fileName) throws IOException{
-            for (FileHolder holder :
-                    this.holders) {
-                if (holder == null) continue;
-                if (holder.getName().equals(fileName)) {
-                    return holder;
-                }
-            }
-            FileHolder holder = new FileHolder(
-                    new File(DIR_PREFIX
-                            + fileName.toString()));
-            this.holders[this.index++] = holder;
-            this.index %= this.holders.length;
-            return holder;
+        public byte[] get(byte[] key) throws IOException, NoSuchElementException{
+            if (this.sSMap.get(ByteBuffer.wrap(key)) == null) throw new NoSuchElementException();
+            return null;
+        }
+
+        public boolean contains(byte[] key) {
+            return this.sSMap.containsKey(ByteBuffer.wrap(key));
+        }
+
+        public void store(SortedMap<ByteBuffer, byte[]> source) throws IOException{
+
+        }
+
+        private int getInt(byte[] bytes) {
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            byteBuffer.order(ByteOrder.BIG_ENDIAN);
+            return byteBuffer.getInt(0);
         }
     }
 
@@ -324,11 +278,7 @@ public final class KVDaoFactory {
             }
         }
 
-        private int getInt(byte[] bytes) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            byteBuffer.order(ByteOrder.BIG_ENDIAN);
-            return byteBuffer.getInt(0);
-        }
+
     }
 
 }
