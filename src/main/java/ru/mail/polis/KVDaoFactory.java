@@ -72,7 +72,7 @@ public final class KVDaoFactory {
         final private int MEM_TABLE_TRASH_HOLD = 300;
         final private String STORAGE_DIR;
 
-        final private SortedMap<ByteBuffer, byte[]> memTable = new TreeMap<>(new Comparator<ByteBuffer>() {
+        final private SortedMap<ByteBuffer, Value> memTable = new TreeMap<>(new Comparator<ByteBuffer>() {
             @Override
             public int compare(ByteBuffer o1, ByteBuffer o2) {
                 return o1.compareTo(o2);
@@ -112,7 +112,7 @@ public final class KVDaoFactory {
         @NotNull
         @Override
         public byte[] get(@NotNull byte[] key) throws IOException, NoSuchElementException {
-            byte[] value = this.memTable.get(ByteBuffer.wrap(key));
+            byte[] value = this.memTable.get(ByteBuffer.wrap(key)).getBytes();
             if (value == null) {
                 return this.holder.get(key);
             } else {
@@ -126,7 +126,7 @@ public final class KVDaoFactory {
 
         @Override
         public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-            this.memTable.put(ByteBuffer.wrap(key), value);
+            this.memTable.put(ByteBuffer.wrap(key), new Value(value));
             this.memTablesize += key.length + value.length;
             if (memTablesize >= MEM_TABLE_TRASH_HOLD) {
                 this.holder.store(this.memTable);
@@ -137,18 +137,18 @@ public final class KVDaoFactory {
 
         @Override
         public void remove(@NotNull byte[] key) throws IOException, NoSuchElementException {
-            byte[] value = this.memTable.get(ByteBuffer.wrap(key));
+            byte[] value = this.memTable.get(ByteBuffer.wrap(key)).getBytes();
             if (value != null) {
                 if (value == SnapshotHolder.REMOVED_VALUE) {
                     throw new NoSuchElementException();
                 } else {
-                    this.memTable.put(ByteBuffer.wrap(key), SnapshotHolder.REMOVED_VALUE);
+                    this.memTable.put(ByteBuffer.wrap(key), new Value(SnapshotHolder.REMOVED_VALUE));
                 }
             } else {
                 if (!this.holder.contains(key)) {
                     throw new NoSuchElementException();
                 } else {
-                    this.memTable.put(ByteBuffer.wrap(key), SnapshotHolder.REMOVED_VALUE);
+                    this.memTable.put(ByteBuffer.wrap(key), new Value(SnapshotHolder.REMOVED_VALUE));
                 }
             }
         }
@@ -160,7 +160,7 @@ public final class KVDaoFactory {
     }
 
     private static class SnapshotHolder {
-        final public static byte[] REMOVED_VALUE = new byte[0];
+        final public static byte[] REMOVED_VALUE = new byte[];
 
         final private Map<ByteBuffer, Long> sSMap = new HashMap<>();
         final private File storage;
@@ -180,8 +180,20 @@ public final class KVDaoFactory {
             return this.sSMap.containsKey(ByteBuffer.wrap(key));
         }
 
-        public void store(SortedMap<ByteBuffer, byte[]> source) throws IOException{
+        public void store(SortedMap<ByteBuffer, Value> source) throws IOException{
+            long offset = 0;
+            File dist = new File(this.storage + (fileNumber++).toString());
+            dist.createNewFile();
+            OutputStream outputStream = new FileOutputStream(dist);
+            outputStream.write(ByteBuffer.allocate(Long.BYTES).putLong(System.currentTimeMillis()).array());
 
+            for (Map.Entry<ByteBuffer, Value> entry : source.entrySet()) {
+
+            }
+
+            for (Map.Entry<ByteBuffer, Value> entry : source.entrySet()) {
+
+            }
         }
 
         private int getInt(byte[] bytes) {
@@ -191,13 +203,44 @@ public final class KVDaoFactory {
         }
     }
 
+    private static class Value {
+        private long timeStamp;
+        private byte[] value;
+
+        public Value(long timeStamp, byte[] bytes) {
+            this.timeStamp = timeStamp;
+            this.value = bytes;
+        }
+
+        public Value(byte[] bytes) {
+            this.timeStamp = 0L;
+            this.value = bytes;
+        }
+
+        public long getTimeStamp() {
+            return timeStamp;
+        }
+
+        public void setTimeStamp(long timeStamp) {
+            this.timeStamp = timeStamp;
+        }
+
+        public byte[] getBytes() {
+            return value;
+        }
+
+        public void setBytes(byte[] value) {
+            this.value = value;
+        }
+    }
+
     private static class FileHolder {
         private final long MIN_FILE_LENGTH = Integer.BYTES * 2 + Byte.BYTES * 2;
 
         private final File source;
         private final Long sourceNameAsLong;
         private long size;
-        private Map<ByteBuffer, byte[]>map;
+        private Map<ByteBuffer, Value[]>map;
 
         public FileHolder(final File src) throws StreamCorruptedException, FileNotFoundException, IOException {
             if (!src.exists()) throw new FileNotFoundException();
@@ -211,7 +254,7 @@ public final class KVDaoFactory {
                     InputStream inputStream = new FileInputStream(this.source);
                     long index = -1;
                     while (index < this.size - 1) {
-                        byte[] bytes = new byte[Integer.BYTES];
+                        Value[] bytes = new byte[Integer.BYTES];
                         if (inputStream.read(bytes) != Integer.BYTES) throw new IOException();
                         index += Integer.BYTES;
                         int keyLength = getInt(bytes);
@@ -239,22 +282,22 @@ public final class KVDaoFactory {
             return sourceNameAsLong;
         }
 
-        public byte[] get(byte[] key) {
-                byte[] bytes = this.map.get(ByteBuffer.wrap(key));
+        public Value[] get(Value[] key) {
+                Value[] bytes = this.map.get(ByteBuffer.wrap(key));
                 return bytes;
         }
 
-        public void upsert(byte[] key, byte[] value) throws IOException{
+        public void upsert(Value[] key, Value[] value) throws IOException{
             this.map.put(ByteBuffer.wrap(key), value);
             flush();
         }
 
-        public void remove(byte[] key) throws IOException, NoSuchElementException{
+        public void remove(Value[] key) throws IOException, NoSuchElementException{
             if (this.map.remove(ByteBuffer.wrap(key)) == null) throw new NoSuchElementException();
             flush();
         }
 
-        public void forEach(BiConsumer<ByteBuffer, byte[]> consumer) {
+        public void forEach(BiConsumer<ByteBuffer, Value[]> consumer) {
             this.map.forEach(consumer);
         }
 
