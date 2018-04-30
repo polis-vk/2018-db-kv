@@ -50,6 +50,7 @@ public class LoadTest {
     @Test
     public void bulkInsert() throws IOException {
         final int keys = 100_000;
+//        final int keys = 10000;
         final BigInteger initial = initial();
 
         final File data = Files.createTempDirectory();
@@ -65,6 +66,7 @@ public class LoadTest {
 
             // Reopen
             dao.close();
+            System.out.println("Closed");
             dao = KVDaoFactory.create(data);
 
             // Check the storage
