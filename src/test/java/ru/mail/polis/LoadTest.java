@@ -66,7 +66,6 @@ public class LoadTest {
 
             // Reopen
             dao.close();
-            System.out.println("Closed");
             dao = KVDaoFactory.create(data);
 
             // Check the storage

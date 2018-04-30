@@ -252,8 +252,12 @@ public final class KVDaoFactory {
             for (Map.Entry<ByteBuffer, byte[]> entry : source.entrySet()) {
                 outputStream.write(intBuffer.putInt(entry.getKey().array().length).array()); intBuffer.clear();
                 outputStream.write(entry.getKey().array());
-                outputStream.write(intBuffer.putInt(offset).array()); intBuffer.clear();
-                offset += Integer.BYTES + entry.getValue().length;
+                if (entry.getValue() == SnapshotHolder.REMOVED_VALUE) {
+                    outputStream.write(intBuffer.putInt(-1).array()); intBuffer.clear();
+                } else {
+                    outputStream.write(intBuffer.putInt(offset).array()); intBuffer.clear();
+                    offset += Integer.BYTES + entry.getValue().length;
+                }
             }
 
             for (Map.Entry<ByteBuffer, byte[]> entry : source.entrySet()) {
@@ -312,92 +316,4 @@ public final class KVDaoFactory {
             }
         }
     }
-
-//    private static class FileHolder {
-//        private final long MIN_FILE_LENGTH = Integer.BYTES * 2 + Byte.BYTES * 2;
-//
-//        private final File source;
-//        private final Long sourceNameAsLong;
-//        private long size;
-//        private Map<ByteBuffer, Value[]>map;
-//
-//        public FileHolder(final File src) throws StreamCorruptedException, FileNotFoundException, IOException {
-//            if (!src.exists()) throw new FileNotFoundException();
-//            else if (!src.isFile() || !src.canRead()) throw new IOException();
-//            this.source = src;
-//            this.size = src.length();
-//            this.sourceNameAsLong = Long.parseLong(this.source.getName());
-//            this.map = new LinkedHashMap();
-//            if (src.length() != 0) {
-//                if (src.length() >= MIN_FILE_LENGTH) {
-//                    InputStream inputStream = new FileInputStream(this.source);
-//                    long index = -1;
-//                    while (index < this.size - 1) {
-//                        Value[] bytes = new byte[Integer.BYTES];
-//                        if (inputStream.read(bytes) != Integer.BYTES) throw new IOException();
-//                        index += Integer.BYTES;
-//                        int keyLength = getInt(bytes);
-//                        if (inputStream.read(bytes) != Integer.BYTES) throw new IOException();
-//                        index += Integer.BYTES;
-//                        int valueLength = getInt(bytes);
-//                        bytes = new byte[keyLength];
-//                        if (inputStream.read(bytes) != keyLength) throw new IOException();
-//                        final ByteBuffer keyBuffer = ByteBuffer.wrap(bytes);
-//                        index += keyLength;
-//                        bytes = new byte[valueLength];
-//                        if (valueLength != 0)
-//                            if (inputStream.read(bytes) != valueLength) throw new IOException();
-//                        index += valueLength;
-//                        this.map.put(keyBuffer,
-//                                bytes);
-//                    }
-//                    inputStream.close();
-//                } else
-//                    throw new StreamCorruptedException();
-//            }
-//        }
-//
-//        public Long getName() {
-//            return sourceNameAsLong;
-//        }
-//
-//        public Value[] get(Value[] key) {
-//                Value[] bytes = this.map.get(ByteBuffer.wrap(key));
-//                return bytes;
-//        }
-//
-//        public void upsert(Value[] key, Value[] value) throws IOException{
-//            this.map.put(ByteBuffer.wrap(key), value);
-//            flush();
-//        }
-//
-//        public void remove(Value[] key) throws IOException, NoSuchElementException{
-//            if (this.map.remove(ByteBuffer.wrap(key)) == null) throw new NoSuchElementException();
-//            flush();
-//        }
-//
-//        public void forEach(BiConsumer<ByteBuffer, Value[]> consumer) {
-//            this.map.forEach(consumer);
-//        }
-//
-//        private void flush() throws IOException{
-//            final OutputStream outputStream = new FileOutputStream(source, false);
-//            try {
-//                this.map.forEach((byteBuffer, bytes) -> {
-//                    try {
-//                        outputStream.write(ByteBuffer.allocate(Integer.BYTES).putInt(byteBuffer.capacity()).array());
-//                        outputStream.write(ByteBuffer.allocate(Integer.BYTES).putInt(bytes.length).array());
-//                        outputStream.write(byteBuffer.array());
-//                        outputStream.write(bytes);
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                        System.exit(1);
-//                    }
-//                });
-//            } finally {
-//                outputStream.flush();
-//                outputStream.close();
-//            }
-//        }
-//}
 }
