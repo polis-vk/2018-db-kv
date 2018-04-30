@@ -2,11 +2,11 @@ package ru.mail.polis.alexeykotelevskiy;
 
 
 import java.io.*;
-import java.nio.file.Files;
+
 
 
 public class BTree<K extends Comparable<? super K>, V> implements Serializable {
-    //CashTable<K,V> cashTable = new CashTable<>();
+
 
 
     public static String DIR
@@ -17,7 +17,6 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
     private int rootId;
 
     private void createStruct(){
-       // BTreeNode.cashTable = cashTable;
         BTreeNode<K, V> root = new BTreeNode<K, V>(true);
 
         rootId = root.getId();

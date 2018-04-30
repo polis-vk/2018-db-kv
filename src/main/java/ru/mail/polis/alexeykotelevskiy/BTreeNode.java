@@ -12,23 +12,6 @@ import javafx.util.Pair;
 
 public class BTreeNode<K extends Comparable<? super K> , V> implements Comparable<BTreeNode>, Externalizable {
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    @Override
-    public int compareTo(@NotNull BTreeNode o) {
-        if (this.getId() < o.getId())
-        {
-            return -1;
-        }
-        if (this.getId() > o.getId())
-        {
-            return 1;
-        }
-        return 0;
-    }
-
 
 
 
@@ -62,6 +45,25 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         children.add(child.getId());
         splitChild(0, child);
     }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    @Override
+    public int compareTo(@NotNull BTreeNode o) {
+        if (this.getId() < o.getId())
+        {
+            return -1;
+        }
+        if (this.getId() > o.getId())
+        {
+            return 1;
+        }
+        return 0;
+    }
+
+
 
 
     public void add(K key, V value) {
