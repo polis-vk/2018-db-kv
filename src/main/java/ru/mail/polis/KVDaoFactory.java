@@ -1,8 +1,7 @@
 package ru.mail.polis;
 
 import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
+import ru.mail.polis.alexantufiev.KVDaoImpl;
 
 public final class KVDaoFactory {
     private KVDaoFactory() {
@@ -10,7 +9,7 @@ public final class KVDaoFactory {
     }
 
     @NotNull
-    public static KVDao create() throws IOException {
-        throw new UnsupportedOperationException("Implement me");
+    public static KVDao create() {
+        return new KVDaoImpl();
     }
 }
