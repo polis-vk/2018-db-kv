@@ -1,30 +1,41 @@
 package ru.mail.polis.alexeykotelevskiy;
 
-// Introduced in Chapter 17
+
 import java.io.*;
+import java.nio.file.Files;
 
-/** BTree storing many ints on disk. */
+
 public class BTree<K extends Comparable<? super K>, V> implements Serializable {
-    CashTable<K,V> cashTable = new CashTable<>();
+    //CashTable<K,V> cashTable = new CashTable<>();
 
-    /** Directory where files are stored. */
-    public static final String DIR
+
+    public static String DIR
             = BTree.class.getProtectionDomain().getCodeSource()
             .getLocation().getFile() + File.separator;
 
-    /** Id number of the root node. */
+
     private int rootId;
 
-    /** A new BTree is initially empty. */
-    public BTree() {
-        BTreeNode.cashTable = cashTable;
+    private void createStruct(){
+       // BTreeNode.cashTable = cashTable;
         BTreeNode<K, V> root = new BTreeNode<K, V>(true);
+
         rootId = root.getId();
         root.writeToDisk();
         writeToDisk();
     }
 
-    /** Add target to this BTree and write any modified nodes to disk. */
+    public BTree(){
+        createStruct();
+    }
+
+    public BTree(String path) {
+        DIR  = path + File.separator;
+        IdGenerator.FILE = new File(BTree.DIR + "id");
+        createStruct();
+    }
+
+
     public void add(K key, V value) {
         BTreeNode<K, V> root = BTreeNode.readFromDisk(rootId);
         if (root.isFull()) {
@@ -53,7 +64,7 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
     }
 
 
-    /** Return true if this BTree contains target. */
+
     public boolean contains(K target) {
         BTreeNode<K, V> node = BTreeNode.readFromDisk(rootId);
         while (node != null) {
@@ -68,13 +79,15 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
         return false;
     }
 
-    /** Read a previously saved BTree from disk. */
-    public static<K extends Comparable<? super K>, V> BTree<K, V> readFromDisk() {
+    public static<K extends Comparable<? super K>, V> BTree<K, V> readFromDisk(String path) {
         try {
             ObjectInputStream in
                     = new ObjectInputStream
-                    (new FileInputStream(DIR + "btree"));
-            return (BTree<K, V>)(in.readObject());
+                    (new FileInputStream(path));
+            BTree<K,V> a = (BTree<K, V>)(in.readObject());
+            in.close();
+
+            return a;
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -82,7 +95,7 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
         }
     }
 
-    /** Remove target from this BTree. */
+
     public void remove(K key) {
         BTreeNode<K, V> root = BTreeNode.readFromDisk(rootId);
         root.remove(key);
@@ -94,8 +107,10 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
         }
     }
 
-    /** Write this BTree to disk. */
+
+
     public void writeToDisk() {
+
         try {
             ObjectOutputStream out
                     = new ObjectOutputStream

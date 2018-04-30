@@ -59,9 +59,6 @@ public class LoadTest {
             // Fill the storage
             BigInteger value = initial;
             for (int i = 0; i < keys; i++) {
-                if (i % 100 == 0) {
-                    System.out.println(i);
-                }
                 dao.upsert(keyFrom(i), value.toByteArray());
                 value = next(value);
             }

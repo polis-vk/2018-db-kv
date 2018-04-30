@@ -56,6 +56,6 @@ public final class KVDaoFactory {
         }
 
         // TODO: Implement me
-        return new KVDaoImpl();
+        return new KVDaoImpl(data);
     }
 }

@@ -11,7 +11,7 @@ import java.io.ObjectOutputStream;
 public class IdGenerator {
 
     /** File in which the next available id is stored. */
-    public static final File FILE = new File(BTree.DIR + "id");
+    public static File FILE = new File(BTree.DIR + "id");
 
     /** Return the next available id number. */
     public static int nextId() {

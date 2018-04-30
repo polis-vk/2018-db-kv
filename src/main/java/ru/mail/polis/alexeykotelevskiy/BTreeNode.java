@@ -1,6 +1,6 @@
 package ru.mail.polis.alexeykotelevskiy;
 
-// Introduced in Chapter 17
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,12 +9,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javafx.util.Pair;
 
-/** Node in a BTree. */
+
 public class BTreeNode<K extends Comparable<? super K> , V> implements Comparable<BTreeNode>, Externalizable {
-
-    static CashTable cashTable;
-
-
 
     public void setId(int id) {
         this.id = id;
@@ -36,23 +32,20 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
 
 
 
-    /** Minimum number of children.  Max is twice this. */
+
     public static final int HALF_MAX = 20;
 
-    /** Items stored in this node. */
+
     private java.util.ArrayList<K> data;
     public java.util.ArrayList<V> values;
 
-    /** Ids of children of this node. */
+
     private java.util.ArrayList<Integer> children;
 
-    /** Number identifying this node. */
-    private int id;
 
-    /**
-     * The new node has no data or children yet.  The argument
-     * leaf specifies whether it is a leaf.
-     */
+    private int id;
+    public BTreeNode(){}
+
     public BTreeNode(boolean leaf) {
 
         this.id = IdGenerator.nextId();
@@ -63,20 +56,14 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /**
-     * Create a new node that has two children, each containing
-     * half of the items from child.  Write the children to disk.
-     */
+
     public BTreeNode(BTreeNode<K,V> child) {
         this(false);
         children.add(child.getId());
         splitChild(0, child);
     }
 
-    /**
-     * Add target to the subtree rooted at this node.  Write nodes
-     * to disk as necessary.
-     */
+
     public void add(K key, V value) {
         BTreeNode<K, V> node = this;
         while (!(node.isLeaf())) {
@@ -98,10 +85,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         node.writeToDisk();
     }
 
-    /**
-     * Add target to this node, which is assumed to not be full.
-     * Make room for an extra child to the right of target.
-     */
+
     protected void addLocally(K key, V value) {
         int loc = indexOf(key);
         int i = loc >= 0 ? loc + 1 : -loc - 1;
@@ -118,11 +102,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /**
-     * Create and return a new node which will be a right sibling
-     * of this one.  Half of the items and children in this node are
-     * copied to the new one.
-     */
+
     protected BTreeNode createRightSibling() {
         BTreeNode<K, V> sibling = new BTreeNode<K, V>(isLeaf());
         for (int i = HALF_MAX; i < (HALF_MAX * 2) - 1; i++) {
@@ -138,7 +118,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         return sibling;
     }
 
-    /** Delete the file containing this node from the disk. */
+
     public void deleteFromDisk() {
         try {
             File file = new File(BTree.DIR + "b" + id + ".node");
@@ -149,10 +129,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /**
-     * Read the ith child of this node from the disk and return it.
-     * If this node is a leaf, return null.
-     */
+
     public BTreeNode<K, V> getChild(int index) {
         if (isLeaf()) {
             return null;
@@ -161,41 +138,33 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /** Return the id of this node. */
+
     public int getId() {
         return id;
     }
 
-    /**
-     * Return the index of target in this node if present.  Otherwise,
-     * return the index of the child that would contain target,
-     * plus 0.5.
-     */
+
     public int indexOf(K key) {
         int loc = Collections.binarySearch(data, key);
         return loc;
     }
 
-    /** Return true if this node is full. */
+
     public boolean isFull() {
         return size() == HALF_MAX * 2;
     }
 
-    /** Return true if this node is a leaf. */
+
     public boolean isLeaf() {
         return children == null;
     }
 
-    /** Return true if this node is minimal. */
+
     public boolean isMinimal() {
         return size() == HALF_MAX;
     }
 
-    /**
-     * Merge this node's ith and (i+1)th children (child and sibling,
-     * both minimal), moving the ith item down from this node.
-     * Delete sibling from disk.
-     */
+
     protected void mergeChildren(int i, BTreeNode<K, V> child, BTreeNode<K, V> sibling) {
         child.data.add(data.remove(i));
         child.values.add(values.remove(i));
@@ -213,20 +182,14 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         sibling.deleteFromDisk();
     }
 
-    /** Read from disk and return the node with the specified id. */
+
     public static<K extends Comparable<? super K>,V> BTreeNode<K,V> readFromDisk(int id) {
-
-        BTreeNode<K,V> node = cashTable.getNode(id);
-
-        if (node!=null){
-            return node;
-        }
-
         try {
             ObjectInputStream in
                     = new ObjectInputStream
                     (new FileInputStream(BTree.DIR + "b" + id + ".node"));
             BTreeNode<K,V> bTreeNode = (BTreeNode<K,V>)(in.readObject());
+            in.close();
             return bTreeNode;
         } catch (Exception e) {
             e.printStackTrace();
@@ -235,10 +198,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /**
-     * Remove target from the subtree rooted at this node.
-     * Write any modified nodes to disk.
-     */
+
     public void remove(K key) {
         int loc = indexOf(key);
         int i = loc;
@@ -255,10 +215,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /**
-     * Remove target from the subtree rooted at child i of this node.
-     * Write any modified nodes to disk.
-     */
+
     protected void removeFromChild(int i, K key) {
         BTreeNode<K, V> child = getChild(i);
         if (child.isMinimal()) {
@@ -293,10 +250,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         child.remove(key);
     }
 
-    /**
-     * Remove the ith item (target) from this node.
-     * Write any modified nodes to disk.
-     */
+
     protected void removeFromInternalNode(int i, K key) {
         BTreeNode<K, V> child = getChild(i);
         BTreeNode<K, V> sibling = getChild(i + 1);
@@ -317,10 +271,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /**
-     * Remove and return the leftmost element in the leftmost descendant
-     * of this node.  Write any modified nodes to disk.
-     */
+
     protected Pair<K, V> removeLeftmost() {
         BTreeNode<K, V> node = this;
         while (!(node.isLeaf())) {
@@ -343,10 +294,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         return pair;
     }
 
-    /**
-     * Remove and return the rightmost element in the rightmost
-     * descendant of this node.  Write any modified nodes to disk.
-     */
+
     protected Pair<K, V> removeRightmost() {
         BTreeNode<K, V> node = this;
         while (!(node.isLeaf())) {
@@ -370,12 +318,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         return pair;
     }
 
-    /**
-     * Child is the ith child of this node, sibling the (i+1)th.
-     * Move one item from sibling up into this node, one from this
-     * node down into child.  Pass one child from sibling to node.
-     * Write sibling to disk.
-     */
+
     protected void rotateLeft(int i, BTreeNode<K, V> child,
             BTreeNode<K, V> sibling) {
         child.data.add(data.get(i));
@@ -388,12 +331,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         sibling.writeToDisk();
     }
 
-    /**
-     * Sibling is the ith child of this node, child the (i+1)th.
-     * Move one item from sibling up into this node, one from this
-     * node down into child.  Pass one child from sibling to node.
-     * Write sibling to disk.
-     */
+
     protected void rotateRight(int i, BTreeNode<K, V> sibling,
             BTreeNode<K,V> child) {
         child.data.add(0, data.get(i));
@@ -407,7 +345,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         sibling.writeToDisk();
     }
 
-    /** Make this node a leaf if value is true, not a leaf otherwise. */
+
     public void setLeaf(boolean value) {
         if (value) {
             children = null;
@@ -416,15 +354,12 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
-    /** Return one plus the number of items in this node. */
+
     public int size() {
         return data.size() + 1;
     }
 
-    /**
-     * Split child, which is the full ith child of this node, into
-     * two minimal nodes, moving the middle item up into this node.
-     */
+
     protected void splitChild(int i, BTreeNode<K, V> child) {
         BTreeNode sibling = child.createRightSibling();
         addLocally(child.data.remove(HALF_MAX - 1), child.values.remove(HALF_MAX - 1));
@@ -432,14 +367,14 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         children.set(i + 1, sibling.getId());
     }
 
-    /** Write this node to disk. */
+
     public void writeToDisk() {
-        cashTable.setNode(this);
+
         try {
             ObjectOutputStream out
                     = new ObjectOutputStream
                     (new FileOutputStream(BTree.DIR + "b" + id + ".node"));
-            out.writeObject(this);
+            out.writeObject((BTreeNode<K,V>)this);
             out.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -447,18 +382,20 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         }
     }
 
+
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(data);
         out.writeObject(values);
         out.writeObject(children);
+        out.writeInt(id);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        System.out.println("OK");
-        data = (ArrayList<K>)in.readObject();
-        values = (ArrayList<V>)in.readObject();
-        children = (ArrayList<Integer>)in.readObject();
+        data = (ArrayList<K>) in.readObject();
+        values = (ArrayList<V>) in.readObject();
+        children = (ArrayList<Integer>) in.readObject();
+        id = in.readInt();
     }
 }
