@@ -17,6 +17,7 @@
 package ru.mail.polis;
 
 import org.jetbrains.annotations.NotNull;
+import ru.mail.polis.gskoba.KVServiceFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,8 +53,6 @@ public final class KVDaoFactory {
         if (!data.isDirectory()) {
             throw new IllegalArgumentException("Path is not a directory: " + data);
         }
-
-        // TODO: Implement me
-        throw new UnsupportedOperationException("Implement me!");
+        return new KVServiceFactory();
     }
 }
