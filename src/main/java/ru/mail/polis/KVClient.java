@@ -54,7 +54,14 @@ public class KVClient {
 
         try (final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             String line;
-            while (!"quit".equals(line = reader.readLine())) {
+            while (true) {
+                line = reader.readLine();
+
+                if("quit".equals(line)){
+                    dao.close();
+                    break;
+                }
+
                 if (line.isEmpty()) {
                     continue;
                 }
@@ -73,8 +80,12 @@ public class KVClient {
                         break;
 
                     case "put":
-                        final String value = tokens[2];
-                        dao.upsert(key.getBytes(), value.getBytes());
+                        try {
+                            final String value = tokens[2];
+                            dao.upsert(key.getBytes(), value.getBytes());
+                        } catch (ArrayIndexOutOfBoundsException e){
+                            System.err.println("Array index out of bounds exception");
+                        }
                         break;
 
                     case "remove":

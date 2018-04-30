@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 
 public class KVServiceFactory implements KVDao {
 
+
     private final Map<ByteBuffer, byte[]> storage;
 
     public KVServiceFactory() {
