@@ -19,6 +19,7 @@ public class ByteArrayWrapper {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(data);
+        int h;
+        return (h = Arrays.hashCode(data)) ^ h >>> 16;
     }
 }
