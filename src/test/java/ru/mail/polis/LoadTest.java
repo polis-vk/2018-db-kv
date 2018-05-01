@@ -16,6 +16,7 @@
 
 package ru.mail.polis;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -51,31 +52,28 @@ public class LoadTest {
         final BigInteger initial = initial();
 
         final File data = Files.createTempDirectory();
-        try {
-            KVDao dao = KVDaoFactory.create(data);
+        KVDao dao = KVDaoFactory.create(data);
 
-            // Fill the storage
-            BigInteger value = initial;
-            for (int i = 0; i < keys; i++) {
-                dao.upsert(keyFrom(i), value.toByteArray());
-                value = next(value);
-            }
+        // Fill the storage
+        BigInteger value = initial;
+        for (int i = 0; i < keys; i++) {
+            dao.upsert(keyFrom(i), value.toByteArray());
+            value = next(value);
+        }
 
-            // Reopen
-            dao.close();
-            dao = KVDaoFactory.create(data);
+        // Reopen
+        dao.close();
+        dao = KVDaoFactory.create(data);
 
-            // Check the storage
-            value = initial;
-            for (int i = 0; i < keys; i++) {
-                assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i)));
-                value = next(value);
-            }
-        } finally {
-            Files.recursiveDelete(data);
+        // Check the storage
+        value = initial;
+        for (int i = 0; i < keys; i++) {
+            assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i)));
+            value = next(value);
         }
     }
 
+    @Ignore
     @Test
     public void bulkReplace() throws IOException {
         final int keys = 10_000;
@@ -83,35 +81,32 @@ public class LoadTest {
         final BigInteger initial = initial();
 
         final File data = Files.createTempDirectory();
-        try {
-            KVDao dao = KVDaoFactory.create(data);
+        KVDao dao = KVDaoFactory.create(data);
 
-            // Fill the storage
-            BigInteger value = initial;
-            for (int i = 0; i < ops; i++) {
-                dao.upsert(keyFrom(i % keys), value.toByteArray());
-                value = next(value);
-            }
-
-            // Reopen
-            dao.close();
-            dao = KVDaoFactory.create(data);
-
-            // Check the storage
-
-            // Iterate up to the last cycle
-            value = initial;
-            for (int i = 0; i < ops - keys; i++) {
-                value = next(value);
-            }
-
-            // Check values
-            for (int i = ops - keys; i < ops; i++) {
-                assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i % keys)));
-                value = next(value);
-            }
-        } finally {
-            Files.recursiveDelete(data);
+        // Fill the storage
+        BigInteger value = initial;
+        for (int i = 0; i < ops; i++) {
+            dao.upsert(keyFrom(i % keys), value.toByteArray());
+            value = next(value);
         }
+
+        // Reopen
+        dao.close();
+        dao = KVDaoFactory.create(data);
+
+        // Check the storage
+
+        // Iterate up to the last cycle
+        value = initial;
+        for (int i = 0; i < ops - keys; i++) {
+            value = next(value);
+        }
+
+        // Check values
+        for (int i = ops - keys; i < ops; i++) {
+            assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i % keys)));
+            value = next(value);
+        }
+
     }
 }
