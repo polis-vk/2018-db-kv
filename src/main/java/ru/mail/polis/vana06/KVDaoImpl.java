@@ -40,9 +40,9 @@ public class KVDaoImpl implements KVDao {
 
     @Override
     public void remove(@NotNull byte[] key) throws IOException {
-        map.remove(new ByteArrayWrapper(key));
-        File file = new File(data.toPath() + "//" + new ByteArrayWrapper(key).hashCode());
-        if(file.exists()){
+        byte[] value = map.remove(new ByteArrayWrapper(key));
+        if(value == null) {
+            File file = new File(data.toPath() + "//" + new ByteArrayWrapper(key).hashCode());
             file.delete();
         }
     }

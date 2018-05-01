@@ -80,4 +80,51 @@ public class PersistenceTest extends TestBase {
             Files.recursiveDelete(data);
         }
     }
+
+    @Test
+    public void upsert() throws IOException {
+        // Reference value
+        final byte[] key = randomKey();
+        byte[] value = randomValue();
+
+        final File data = Files.createTempDirectory();
+        try {
+            // Create, fill and close storage
+            KVDao dao = KVDaoFactory.create(data);
+            dao.upsert(key, value);
+            dao.close();
+
+            //new value
+            value = randomValue();
+            // Recreate dao
+            dao = KVDaoFactory.create(data);
+            dao.upsert(key, value);
+            assertArrayEquals(value, dao.get(key));
+        } finally {
+            Files.recursiveDelete(data);
+        }
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void remove() throws IOException {
+        // Reference value
+        final byte[] key = randomKey();
+        final byte[] value = randomValue();
+
+        final File data = Files.createTempDirectory();
+        try {
+            // Create, fill and close storage
+            KVDao dao = KVDaoFactory.create(data);
+            dao.upsert(key, value);
+            dao.close();
+
+            // Recreate dao
+            dao = KVDaoFactory.create(data);
+            assertArrayEquals(value, dao.get(key));
+            dao.remove(key);
+            dao.get(key);
+        } finally {
+            Files.recursiveDelete(data);
+        }
+    }
 }
