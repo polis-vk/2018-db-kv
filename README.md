@@ -45,8 +45,9 @@ $ gradle test
 Как и раньше необходимо обеспечить прохождение существующих модульных тестов, а также желательно добавить свои тесты и включить их в pull request.
 
 Предложения по реализации:
-* Начать можно с хранения каждого значения в отдельном файле, но такой подход не позволит пройти этап 2.1
-* Можно реализовать упрощённый [подход Cassandra](https://docs.datastax.com/en/cassandra/3.0/cassandra/dml/dmlHowDataWritten.html#dmlHowDataWritten__storing-data-on-disk-in-sstables) или [идеи](https://www.igvita.com/2012/02/06/sstable-and-log-structured-storage-leveldb/) [LevelDB](http://leveldb.org) без дополнительных индексов, сжатия и Bloom Filter
+* Начать необходимо с хранения каждого значения в отдельном файле, но этого недостаточно, чтобы пройти этап 2.1
+* Далее можно перейти на одно из [существующих Key-Value хранилищ](https://github.com/lmdbjava/benchmarks)
+* Либо самостоятельно реализовать идею [LSM](https://en.wikipedia.org/wiki/Log-structured_merge-tree) как в [Cassandra](https://docs.datastax.com/en/cassandra/3.0/cassandra/dml/dmlHowDataWritten.html#dmlHowDataWritten__storing-data-on-disk-in-sstables) или [LevelDB](https://www.igvita.com/2012/02/06/sstable-and-log-structured-storage-leveldb/), но без дополнительных индексов, сжатия и Bloom Filter
 
 ### Этап 2.1. Load test (deadline 2018-05-09)
 
