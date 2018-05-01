@@ -32,6 +32,8 @@ import static org.junit.Assert.assertArrayEquals;
  * @author Vadim Tsesko <incubos@yandex.com>
  */
 public class LoadTest {
+    private static KVDao dao;
+
     private static byte[] keyFrom(final long i) {
         return BigInteger.valueOf(i).multiply(BigInteger.valueOf(13)).toByteArray();
     }
@@ -46,7 +48,7 @@ public class LoadTest {
         return current.add(BigInteger.ONE);
     }
 
-    @Ignore("Per aspera ad astra")
+    //@Ignore("Per aspera ad astra")
     @Test
     public void bulkInsert() throws IOException {
         final int keys = 100_000;
@@ -54,7 +56,7 @@ public class LoadTest {
 
         final File data = Files.createTempDirectory();
         try {
-            KVDao dao = KVDaoFactory.create(data);
+            dao = KVDaoFactory.create(data);
 
             // Fill the storage
             BigInteger value = initial;
@@ -74,11 +76,12 @@ public class LoadTest {
                 value = next(value);
             }
         } finally {
+            dao.close();
             Files.recursiveDelete(data);
         }
     }
 
-    @Ignore("Just do it! (if you can)")
+    //@Ignore("Just do it! (if you can)")
     @Test
     public void bulkReplace() throws IOException {
         final int keys = 10_000;
@@ -87,7 +90,7 @@ public class LoadTest {
 
         final File data = Files.createTempDirectory();
         try {
-            KVDao dao = KVDaoFactory.create(data);
+            dao = KVDaoFactory.create(data);
 
             // Fill the storage
             BigInteger value = initial;
@@ -114,6 +117,7 @@ public class LoadTest {
                 value = next(value);
             }
         } finally {
+            dao.close();
             Files.recursiveDelete(data);
         }
     }

@@ -1,5 +1,9 @@
 package ru.mail.polis.vana06;
 
+import jetbrains.exodus.ArrayByteIterable;
+import jetbrains.exodus.ByteIterable;
+import jetbrains.exodus.bindings.StringBinding;
+import jetbrains.exodus.env.*;
 import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.KVDao;
 
@@ -13,46 +17,60 @@ import java.util.NoSuchElementException;
 public class KVDaoImpl implements KVDao {
 
     private final Map<ByteArrayWrapper, byte[]> map = new HashMap<>();
-    private final File data;
+    private final Environment env;
+    private final Store store;
 
     public KVDaoImpl(File data) {
-        this.data = data;
+        env = Environments.newInstance(data);
+        store = env.computeInTransaction(new TransactionalComputable<Store>() {
+            @Override
+            public Store compute(@NotNull final Transaction txn) {
+                return env.openStore("MyStore", StoreConfig.WITHOUT_DUPLICATES, txn);
+            }
+        });
     }
 
     @NotNull
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-        byte[] value = map.get(new ByteArrayWrapper(key));
-        if(value == null){
-            File file = new File(data.toPath() + "//" + new ByteArrayWrapper(key).hashCode());
-            if(!file.exists() || !file.isFile()){
-                throw new NoSuchElementException();
-            }
-            value = Files.readAllBytes(file.toPath());
+        final ByteIterable keyToGet = new ArrayByteIterable(key);
+        Transaction txn = env.beginReadonlyTransaction();
+        try {
+            return store.get(txn, keyToGet).getBytesUnsafe();
+        } catch (NullPointerException e){
+            throw new NoSuchElementException();
+        } finally {
+            txn.abort();
         }
-        return value;
     }
 
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-        map.put(new ByteArrayWrapper(key), value);
+        final ByteIterable keyToSave = new ArrayByteIterable(key);
+        final ByteIterable valueToSave = new ArrayByteIterable(value);
+        Transaction txn = env.beginTransaction();
+        try {
+            store.put(txn, keyToSave, valueToSave);
+        } finally {
+            txn.commit();
+        }
+
+
     }
 
     @Override
     public void remove(@NotNull byte[] key) throws IOException {
-        byte[] value = map.remove(new ByteArrayWrapper(key));
-        if(value == null) {
-            File file = new File(data.toPath() + "//" + new ByteArrayWrapper(key).hashCode());
-            file.delete();
+        final ByteIterable keyToDelete = new ArrayByteIterable(key);
+        Transaction txn = env.beginTransaction();
+        try {
+            store.delete(txn, keyToDelete);
+        } finally {
+            txn.commit();
         }
     }
 
     @Override
     public void close() throws IOException {
-        for(Map.Entry<ByteArrayWrapper, byte[]> entry: map.entrySet()){
-            File newFile = new File(data.toPath() + "//" + entry.getKey().hashCode());
-            Files.write(newFile.toPath(), entry.getValue());
-        }
-        map.clear();
+        env.close();
     }
 }
