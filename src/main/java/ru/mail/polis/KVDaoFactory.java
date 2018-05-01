@@ -20,14 +20,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.FileVisitResult;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.function.BiConsumer;
 
 /**
  * Custom {@link KVDao} factory
@@ -48,7 +45,7 @@ public final class KVDaoFactory {
      * @return a storage instance
      */
     @NotNull
-    public static KVDao create(@NotNull final File data) throws IOException {
+    public static KVDao create(@NotNull final File data) throws IOException{
         if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
             throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
         }
@@ -65,21 +62,16 @@ public final class KVDaoFactory {
     }
 
     private static class KVDaoImpl implements KVDao {
-        final private int MEM_TABLE_TRASH_HOLD = 1024 * 20;
+        final private int MEM_TABLE_TRASH_HOLD = 1024 * 30;
         final private String STORAGE_DIR;
 
-        final private SortedMap<ByteBuffer, byte[]> memTable = new TreeMap<>(new Comparator<ByteBuffer>() {
-            @Override
-            public int compare(ByteBuffer o1, ByteBuffer o2) {
-                return o1.compareTo(o2);
-            }
-        });
+        final private SortedMap<ByteBuffer, byte[]> memTable = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
 
         final private SnapshotHolder holder;
 
         private Long memTablesize = 0L;
 
-        public KVDaoImpl(final File dir) {
+        public KVDaoImpl(final File dir) throws IOException{
             this.STORAGE_DIR = dir + File.separator;
             this.holder = new SnapshotHolder(this.STORAGE_DIR);
         }
@@ -111,7 +103,7 @@ public final class KVDaoFactory {
         }
 
         @Override
-        public void remove(@NotNull byte[] key) throws IOException, NoSuchElementException {
+        public void remove(@NotNull byte[] key) throws NoSuchElementException {
             byte[] value = this.memTable.get(ByteBuffer.wrap(key));
             if (value != null) {
                 if (value == SnapshotHolder.REMOVED_VALUE) {
@@ -136,15 +128,16 @@ public final class KVDaoFactory {
 
     private static class SnapshotHolder {
         final public static byte[] REMOVED_VALUE = new byte[0];
+        final public int REMOVED_MARK = -1;
 
         final private Map<ByteBuffer, Long> sSMap = new HashMap<>();
         final private File storage;
 
         private Long fileNumber = 0L;
 
-        public SnapshotHolder(String dir) /*throws IOException*/{
+        public SnapshotHolder(String dir) throws IOException{
             this.storage = new File(dir);
-//            if (!this.storage.exists()) throw new IOException();
+            if (!this.storage.exists()) throw new IOException();
             HashMap<ByteBuffer, Long> timeStamps = new HashMap<>();
             try {
                 java.nio.file.Files.walkFileTree(
@@ -155,12 +148,11 @@ public final class KVDaoFactory {
                                 long currentTStamp = randomAccessFile.readLong();
                                 int amount = randomAccessFile.readInt();
                                 for (int i = 0; i < amount; i++) {
-                                    int length = randomAccessFile.readInt();
-                                    byte[] bytes = new byte[length];
+                                    byte[] bytes = new byte[randomAccessFile.readInt()];
                                     randomAccessFile.read(bytes);
                                     int offset = randomAccessFile.readInt();
                                     ByteBuffer keyBuffer = ByteBuffer.wrap(bytes);
-                                    if (offset == -1) {
+                                    if (offset == REMOVED_MARK) {
                                         Long itemTStamp = timeStamps.get(keyBuffer);
                                         if (itemTStamp == null) {
                                             timeStamps.put(keyBuffer, currentTStamp);
@@ -206,33 +198,25 @@ public final class KVDaoFactory {
             if (!source.canRead() || !source.exists() || !source.isFile()) throw new IOException();
             RandomAccessFile randomAccessFile = new RandomAccessFile(source, "r");
             randomAccessFile.skipBytes(Long.BYTES);
+            int valueOffset = REMOVED_MARK;
             int amount = randomAccessFile.readInt();
-            ArrayList<Key> keys = new ArrayList<>();
-            for (int i = 0 ; i < amount; i++) {
-                Key storedKey = new Key();
-                storedKey.setLength(randomAccessFile.readInt());
-                byte[] bytes = new byte[storedKey.getLength()];
+            for (int i = 0; i < amount; i++) {
+                byte[] bytes = new byte[randomAccessFile.readInt()];
                 randomAccessFile.read(bytes);
-                storedKey.setKey(bytes);
-                storedKey.setOffset(randomAccessFile.readInt());
-                if (storedKey.getOffset() != -1)
-                    keys.add(storedKey);
-            }
-            Integer valueOffset = null;
-            for (Key k :
-                    keys) {
-                if (Arrays.equals(k.getKey(), key)) {
-                    valueOffset = k.getOffset();
-                    break;
+                int offSet = randomAccessFile.readInt();
+                if (Arrays.equals(bytes, key)) {
+                    if ( offSet != REMOVED_MARK) {
+                        valueOffset = offSet;
+                    } else throw new NoSuchElementException();
                 }
             }
-            if (valueOffset == null) throw new NoSuchElementException();
+
             randomAccessFile.skipBytes(valueOffset);
-            int valueLength = randomAccessFile.readInt();
-            byte[] value = new byte[valueLength];
+            byte[] value = new byte[randomAccessFile.readInt()];
             randomAccessFile.read(value);
             randomAccessFile.close();
             return value;
+
         }
 
         public boolean contains(byte[] key) {
@@ -242,7 +226,7 @@ public final class KVDaoFactory {
         public void save(SortedMap<ByteBuffer, byte[]> source) throws IOException {
             int offset = 0;
             File dist = new File(this.storage + File.separator + fileNumber.toString());
-            dist.createNewFile();
+            if (!dist.createNewFile()) throw new IOException();
 
             ByteBuffer intBuffer = ByteBuffer.allocate(Integer.BYTES);
             OutputStream outputStream = new FileOutputStream(dist);
@@ -252,8 +236,8 @@ public final class KVDaoFactory {
             for (Map.Entry<ByteBuffer, byte[]> entry : source.entrySet()) {
                 outputStream.write(intBuffer.putInt(entry.getKey().array().length).array()); intBuffer.clear();
                 outputStream.write(entry.getKey().array());
-                if (entry.getValue() == SnapshotHolder.REMOVED_VALUE) {
-                    outputStream.write(intBuffer.putInt(-1).array()); intBuffer.clear();
+                if (entry.getValue() == REMOVED_VALUE) {
+                    outputStream.write(intBuffer.putInt(REMOVED_MARK).array()); intBuffer.clear();
                 } else {
                     outputStream.write(intBuffer.putInt(offset).array()); intBuffer.clear();
                     offset += Integer.BYTES + entry.getValue().length;
@@ -270,50 +254,6 @@ public final class KVDaoFactory {
                 this.sSMap.put(entry.getKey(), fileNumber);
             }
             fileNumber++;
-        }
-
-        private int getInt(byte[] bytes) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            byteBuffer.order(ByteOrder.BIG_ENDIAN);
-            return byteBuffer.getInt(0);
-        }
-
-        private class Key {
-            private int length;
-            private byte[] key;
-            private int offset;
-
-            public Key(){};
-
-            public Key(int length, byte[] key, int offset) {
-                this.length = length;
-                this.key = key;
-                this.offset = offset;
-            }
-
-            public int getLength() {
-                return length;
-            }
-
-            public void setLength(int length) {
-                this.length = length;
-            }
-
-            public byte[] getKey() {
-                return key;
-            }
-
-            public void setKey(byte[] key) {
-                this.key = key;
-            }
-
-            public int getOffset() {
-                return offset;
-            }
-
-            public void setOffset(int offset) {
-                this.offset = offset;
-            }
         }
     }
 }
