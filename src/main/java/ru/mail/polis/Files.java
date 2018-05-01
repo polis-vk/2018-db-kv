@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+
 /**
  * Utility classes for handling files
  *
@@ -39,6 +40,9 @@ final class Files {
 
     static File createTempDirectory() throws IOException {
         final File data = java.nio.file.Files.createTempDirectory(TEMP_PREFIX).toFile();
+//        /media/OCZ_Vertex_3_79.8_
+//        File data = new File("/media/OCZ_Vertex_3_79.8_/" +TEMP_PREFIX);
+//        data.mkdirs();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 if (data.exists()) {
