@@ -25,10 +25,14 @@ public class KVDaoImpl implements KVDao {
         this.data = data;
     }
 
+    private String getPath(byte[] key) {
+        return data + File.separator + Arrays.toString(key);
+    }
+
     @NotNull
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-        File tempFile = new File(data + "\\" + Arrays.toString(key));
+        File tempFile = new File(getPath(key));
         //        if (tempFile.exists()) {
         //            return Files.readAllBytes(tempFile.toPath());
         //        } else {
@@ -48,14 +52,14 @@ public class KVDaoImpl implements KVDao {
 
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-        try (FileOutputStream fileOutputStream = new FileOutputStream(new File(data + "\\" + Arrays.toString(key)))) {
+        try (FileOutputStream fileOutputStream = new FileOutputStream(new File(getPath(key)))) {
             fileOutputStream.write(value);
         }
     }
 
     @Override
     public void remove(@NotNull byte[] key) {
-        File tempFile = new File(data + "\\" + Arrays.toString(key));
+        File tempFile = new File(getPath(key));
         if (!tempFile.delete()) {
             throw new UnsupportedOperationException("Can not be delete");
         }
