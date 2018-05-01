@@ -48,7 +48,7 @@ public class LoadTest {
         return current.add(BigInteger.ONE);
     }
 
-    //@Ignore("Per aspera ad astra")
+    @Ignore("Per aspera ad astra")
     @Test
     public void bulkInsert() throws IOException {
         final int keys = 100_000;
@@ -81,7 +81,7 @@ public class LoadTest {
         }
     }
 
-    //@Ignore("Just do it! (if you can)")
+    @Ignore("Just do it! (if you can)")
     @Test
     public void bulkReplace() throws IOException {
         final int keys = 10_000;
