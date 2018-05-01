@@ -16,7 +16,6 @@
 
 package ru.mail.polis;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -73,7 +72,6 @@ public class LoadTest {
         }
     }
 
-    @Ignore
     @Test
     public void bulkReplace() throws IOException {
         final int keys = 10_000;
