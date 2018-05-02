@@ -85,12 +85,17 @@ public class PersistenceTest extends TestBase {
     public void markedRemoveTest() throws IOException{
         File data = Files.createTempDirectory();
         KVDao dao = KVDaoFactory.create(data);
-        final byte[] key = randomKey();
-        final byte[] value = randomValue();
-        dao.upsert(key, value);
-        dao.remove(key);
-        dao.close();
-        dao = KVDaoFactory.create(data);
-        dao.get(key);
+        try {
+            final byte[] key = randomKey();
+            final byte[] value = randomValue();
+            dao.upsert(key, value);
+            dao.remove(key);
+            dao.close();
+            dao = KVDaoFactory.create(data);
+            dao.get(key);
+        } finally {
+            dao.close();
+            Files.recursiveDelete(data);
+        }
     }
 }

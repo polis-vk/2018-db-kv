@@ -65,7 +65,7 @@ public final class KVDaoFactory {
         final private int MEM_TABLE_TRASH_HOLD = 1024 * 40;
         final private String STORAGE_DIR;
 
-        final private SortedMap<ByteBuffer, byte[]> memTable = new TreeMap<>((o1, o2) -> o1.compareTo(o2));
+        final private SortedMap<ByteBuffer, byte[]> memTable = new TreeMap<>();
 
         final private SnapshotHolder holder;
 
@@ -103,21 +103,15 @@ public final class KVDaoFactory {
         }
 
         @Override
-        public void remove(@NotNull byte[] key) throws NoSuchElementException {
+        public void remove(@NotNull byte[] key) {
             byte[] value = this.memTable.get(ByteBuffer.wrap(key));
             if (value != null) {
-                if (value == SnapshotHolder.REMOVED_VALUE) {
-                    throw new NoSuchElementException();
-                } else {
+                if (value != SnapshotHolder.REMOVED_VALUE) {
                     this.memTable.put(ByteBuffer.wrap(key), SnapshotHolder.REMOVED_VALUE);
                 }
-            } else {
-                if (!this.holder.contains(key)) {
-                    throw new NoSuchElementException();
-                } else {
+            } else if (this.holder.contains(key)) {
                     this.memTable.put(ByteBuffer.wrap(key), SnapshotHolder.REMOVED_VALUE);
                 }
-            }
         }
 
         @Override
@@ -175,6 +169,11 @@ public final class KVDaoFactory {
                                         }
                                     }
                                 }
+                                 if (fileNumber <= Long.parseLong(file.toFile().getName())) {
+                                     fileNumber = Long.parseLong(file.toFile().getName());
+                                     fileNumber++;
+                                 }
+                                 randomAccessFile.close();
                             }
 
                             @NotNull
@@ -226,7 +225,8 @@ public final class KVDaoFactory {
         public void save(SortedMap<ByteBuffer, byte[]> source) throws IOException {
             int offset = 0;
             File dist = new File(this.storage + File.separator + fileNumber.toString());
-            if (!dist.createNewFile()) throw new IOException();
+            if (!dist.createNewFile())
+                throw new IOException();
 
             ByteBuffer intBuffer = ByteBuffer.allocate(Integer.BYTES);
             OutputStream outputStream = new FileOutputStream(dist);
