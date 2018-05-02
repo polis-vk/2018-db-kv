@@ -15,16 +15,13 @@ import ru.mail.polis.KVDao;
 
 public class KVDaoImpl implements KVDao {
 
-    private BTree<SerializeBuffer, byte[]> bTree ;
+    private BTree<SerializeBuffer, byte[]> bTree;
 
-    public KVDaoImpl(File data)
-    {
+    public KVDaoImpl(File data) {
         String path = data.getPath() + File.separator + "btree";
-        if (Files.exists(Paths.get(path)))
-        {
+        if (Files.exists(Paths.get(path))) {
             bTree = BTree.readFromDisk(path);
-        }
-        else {
+        } else {
             bTree = new BTree<>(data.getPath());
         }
     }
@@ -34,11 +31,10 @@ public class KVDaoImpl implements KVDao {
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
         SerializeBuffer bKey = new SerializeBuffer(key);
         byte[] val = bTree.search(bKey);
-        if (val == null)
-        {
+        if (val == null) {
             throw new NoSuchElementException();
         }
-       return val;
+        return val;
     }
 
     @Override

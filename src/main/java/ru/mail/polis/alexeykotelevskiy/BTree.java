@@ -4,9 +4,7 @@ package ru.mail.polis.alexeykotelevskiy;
 import java.io.*;
 
 
-
 public class BTree<K extends Comparable<? super K>, V> implements Serializable {
-
 
 
     public static String DIR
@@ -16,7 +14,7 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
 
     private int rootId;
 
-    private void createStruct(){
+    private void createStruct() {
         BTreeNode<K, V> root = new BTreeNode<K, V>(true);
 
         rootId = root.getId();
@@ -24,12 +22,12 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
         writeToDisk();
     }
 
-    public BTree(){
+    public BTree() {
         createStruct();
     }
 
     public BTree(String path) {
-        DIR  = path + File.separator;
+        DIR = path + File.separator;
         IdGenerator.FILE = new File(BTree.DIR + "id");
         createStruct();
     }
@@ -63,12 +61,11 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
     }
 
 
-
     public boolean contains(K target) {
         BTreeNode<K, V> node = BTreeNode.readFromDisk(rootId);
         while (node != null) {
             double d = node.indexOf(target);
-            int i = (int)d;
+            int i = (int) d;
             if (i == d) {
                 return true;
             } else {
@@ -78,12 +75,12 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
         return false;
     }
 
-    public static<K extends Comparable<? super K>, V> BTree<K, V> readFromDisk(String path) {
+    public static <K extends Comparable<? super K>, V> BTree<K, V> readFromDisk(String path) {
         try {
             ObjectInputStream in
                     = new ObjectInputStream
                     (new FileInputStream(path));
-            BTree<K,V> a = (BTree<K, V>)(in.readObject());
+            BTree<K, V> a = (BTree<K, V>) (in.readObject());
             in.close();
 
             return a;
@@ -107,7 +104,6 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
     }
 
 
-
     public void writeToDisk() {
 
         try {
@@ -124,12 +120,12 @@ public class BTree<K extends Comparable<? super K>, V> implements Serializable {
 
     public static void main(String[] args) {
         BTree<Integer, Integer> bTree = new BTree<>();
-        bTree.add(1,2);
-        bTree.add(2,2);
-        bTree.add(3,2);
-        bTree.add(4,2);
-        bTree.add(5,2);
-        bTree.add(5,3);
+        bTree.add(1, 2);
+        bTree.add(2, 2);
+        bTree.add(3, 2);
+        bTree.add(4, 2);
+        bTree.add(5, 2);
+        bTree.add(5, 3);
         System.out.println(bTree.search(5));
     }
 }

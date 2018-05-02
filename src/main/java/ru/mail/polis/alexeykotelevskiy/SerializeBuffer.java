@@ -8,28 +8,28 @@ import java.nio.ByteBuffer;
 
 import org.jetbrains.annotations.NotNull;
 
-public class SerializeBuffer implements Externalizable, Comparable<SerializeBuffer>{
+public class SerializeBuffer implements Externalizable, Comparable<SerializeBuffer> {
     private transient ByteBuffer buff;
 
     public ByteBuffer getBuff() {
         return buff;
     }
 
-    public SerializeBuffer(){}
+    public SerializeBuffer() {
+    }
 
-    SerializeBuffer(byte[] a)
-    {
+    SerializeBuffer(byte[] a) {
         buff = ByteBuffer.wrap(a);
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-      out.writeObject(buff.array());
+        out.writeObject(buff.array());
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-      buff = ByteBuffer.wrap((byte[])in.readObject());
+        buff = ByteBuffer.wrap((byte[]) in.readObject());
     }
 
     @Override

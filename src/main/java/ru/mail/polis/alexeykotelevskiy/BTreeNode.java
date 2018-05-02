@@ -8,11 +8,7 @@ import java.util.Collections;
 import org.jetbrains.annotations.NotNull;
 
 
-
-public class BTreeNode<K extends Comparable<? super K> , V> implements Comparable<BTreeNode>, Externalizable {
-
-
-
+public class BTreeNode<K extends Comparable<? super K>, V> implements Comparable<BTreeNode>, Externalizable {
 
 
     public static final int HALF_MAX = 20;
@@ -26,7 +22,9 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
 
 
     private int id;
-    public BTreeNode(){}
+
+    public BTreeNode() {
+    }
 
     public BTreeNode(boolean leaf) {
 
@@ -39,7 +37,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
     }
 
 
-    public BTreeNode(BTreeNode<K,V> child) {
+    public BTreeNode(BTreeNode<K, V> child) {
         this(false);
         children.add(child.getId());
         splitChild(0, child);
@@ -51,18 +49,14 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
 
     @Override
     public int compareTo(@NotNull BTreeNode o) {
-        if (this.getId() < o.getId())
-        {
+        if (this.getId() < o.getId()) {
             return -1;
         }
-        if (this.getId() > o.getId())
-        {
+        if (this.getId() > o.getId()) {
             return 1;
         }
         return 0;
     }
-
-
 
 
     public void add(K key, V value) {
@@ -96,8 +90,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
             if (!isLeaf()) {
                 children.add(i + 1, 0);
             }
-        } else
-        {
+        } else {
             data.set(loc, key);
             values.set(loc, value);
         }
@@ -184,12 +177,12 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
     }
 
 
-    public static<K extends Comparable<? super K>,V> BTreeNode<K,V> readFromDisk(int id) {
+    public static <K extends Comparable<? super K>, V> BTreeNode<K, V> readFromDisk(int id) {
         try {
             ObjectInputStream in
                     = new ObjectInputStream
                     (new FileInputStream(BTree.DIR + "b" + id + ".node"));
-            BTreeNode<K,V> bTreeNode = (BTreeNode<K,V>)(in.readObject());
+            BTreeNode<K, V> bTreeNode = (BTreeNode<K, V>) (in.readObject());
             in.close();
             return bTreeNode;
         } catch (Exception e) {
@@ -256,12 +249,12 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
         BTreeNode<K, V> child = getChild(i);
         BTreeNode<K, V> sibling = getChild(i + 1);
         if (!(child.isMinimal())) {
-            Pair<K,V> pair = child.removeRightmost();
+            Pair<K, V> pair = child.removeRightmost();
             data.set(i, pair.getKey());
             values.set(i, pair.getValue());
             writeToDisk();
         } else if (!(sibling.isMinimal())) {
-            Pair<K,V> pair = sibling.removeLeftmost();
+            Pair<K, V> pair = sibling.removeLeftmost();
             data.set(i, pair.getKey());
             values.set(i, pair.getValue());
             writeToDisk();
@@ -334,7 +327,7 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
 
 
     protected void rotateRight(int i, BTreeNode<K, V> sibling,
-            BTreeNode<K,V> child) {
+            BTreeNode<K, V> child) {
         child.data.add(0, data.get(i));
         child.values.add(0, values.get(i));
         if (!(child.isLeaf())) {
@@ -370,12 +363,11 @@ public class BTreeNode<K extends Comparable<? super K> , V> implements Comparabl
 
 
     public void writeToDisk() {
-
         try {
             ObjectOutputStream out
                     = new ObjectOutputStream
                     (new FileOutputStream(BTree.DIR + "b" + id + ".node"));
-            out.writeObject((BTreeNode<K,V>)this);
+            out.writeObject((BTreeNode<K, V>) this);
             out.close();
         } catch (Exception e) {
             e.printStackTrace();

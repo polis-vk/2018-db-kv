@@ -7,13 +7,19 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-/** Generates unique id numbers, even across multiple sessions. */
+/**
+ * Generates unique id numbers, even across multiple sessions.
+ */
 public class IdGenerator {
 
-    /** File in which the next available id is stored. */
+    /**
+     * File in which the next available id is stored.
+     */
     public static File FILE = new File(BTree.DIR + "id");
 
-    /** Return the next available id number. */
+    /**
+     * Return the next available id number.
+     */
     public static int nextId() {
         try {
             int result;
