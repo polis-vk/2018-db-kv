@@ -16,6 +16,7 @@
 
 package ru.mail.polis;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -32,6 +33,7 @@ import static org.junit.Assert.fail;
  *
  * @author Vadim Tsesko <incubos@yandex.com>
  */
+@Ignore("Для первого задание не нужно")
 public class PersistenceTest extends TestBase {
     @Test(expected = NoSuchElementException.class)
     public void fs() throws IOException {

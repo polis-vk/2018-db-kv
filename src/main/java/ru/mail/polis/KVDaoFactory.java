@@ -21,7 +21,6 @@ import ru.mail.polis.alexantufiev.KVDaoImpl;
 
 import java.io.File;
 import java.io.IOException;
-import ru.mail.polis.alexantufiev.KVDaoImpl;
 
 /**
  * Custom {@link KVDao} factory
