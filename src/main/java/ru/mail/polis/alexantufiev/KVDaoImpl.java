@@ -28,22 +28,14 @@ public class KVDaoImpl implements KVDao {
         this.dictionary = dictionary;
     }
 
-    public KVDaoImpl(Map<byte[], byte[]> dictionary) {
-        this.dictionary = new HashMap<>();
-        for (Map.Entry<byte[], byte[]> entries : dictionary.entrySet()) {
-            this.dictionary.put(ByteBuffer.wrap(entries.getKey()), entries.getValue());
-        }
-    }
-
     @NotNull
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException {
-        for (Map.Entry<ByteBuffer, byte[]> entries : dictionary.entrySet()) {
-            if (Arrays.equals(entries.getKey().array(), key)) {
-                return entries.getValue();
-            }
+        byte[] temp = dictionary.get(ByteBuffer.wrap(key));
+        if (temp == null) {
+            throw new NoSuchElementException("Element with key = ?" + Arrays.toString(key) + "is not found");
         }
-        throw new NoSuchElementException("Element with key = ?" + Arrays.toString(key) + "is not found");
+        return temp;
     }
 
     @Override
