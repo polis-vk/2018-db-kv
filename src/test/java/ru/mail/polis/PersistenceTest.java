@@ -52,9 +52,13 @@ public class PersistenceTest extends TestBase {
         assertFalse(data.exists());
         assertTrue(data.mkdir());
         final KVDao dao = KVDaoFactory.create(data);
-        dao.get(key);
-        fail();
-
+        try {
+            dao.get(key);
+            fail();
+        } finally {
+            dao.close();
+            Files.recursiveDelete(data);
+        }
     }
 
     @Test
@@ -64,13 +68,19 @@ public class PersistenceTest extends TestBase {
         final byte[] value = randomValue();
 
         final File data = Files.createTempDirectory();
-        // Create, fill and close storage
-        KVDao dao = KVDaoFactory.create(data);
-        dao.upsert(key, value);
-        dao.close();
+        KVDao dao = null;
+        try {
+            // Create, fill and close storage
+            dao = KVDaoFactory.create(data);
+            dao.upsert(key, value);
+            dao.close();
 
-        // Recreate dao
-        dao = KVDaoFactory.create(data);
-        assertArrayEquals(value, dao.get(key));
+            // Recreate dao
+            dao = KVDaoFactory.create(data);
+            assertArrayEquals(value, dao.get(key));
+        } finally {
+            dao.close();
+            Files.recursiveDelete(data);
+        }
     }
 }
