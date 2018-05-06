@@ -1,8 +1,10 @@
 package ru.mail.polis.poletova_n;
 
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class ByteArray {
+public class ByteArray implements Serializable{
 
     private final byte[] mas;
 
@@ -27,5 +29,11 @@ public class ByteArray {
             return Arrays.equals(mas, ((ByteArray) obj).getMas() );
         }
         return false;
+    }
+
+    @Override
+    public String toString(){
+        Integer i = ByteBuffer.wrap(mas).hashCode();
+        return i.toString();
     }
 }
