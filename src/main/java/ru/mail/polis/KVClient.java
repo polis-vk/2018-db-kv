@@ -19,36 +19,50 @@ public class KVClient {
 
         try (final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             String line;
-            while (!"quit".equals(line = reader.readLine())) {
-                if (line.isEmpty()) {
-                    continue;
+            try {
+                while (true) {
+
+                    line = reader.readLine();
+
+                    if ("quit".equals(line)) break;
+
+
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    final String[] tokens = line.split(" ");
+                    final String cmd = tokens[0];
+                    final String key = tokens[1];
+
+                    switch (cmd) {
+                        case "get":
+                            try {
+                                System.out.println(new String(dao.get(key.getBytes())));
+                            } catch (NoSuchElementException e) {
+                                System.err.println("absent");
+                            }
+                            break;
+
+                        case "put":
+                            try {
+                                final String value = tokens[2];
+                                dao.upsert(key.getBytes(), value.getBytes());
+                            } catch (ArrayIndexOutOfBoundsException e) {
+                                System.err.println("invalid command, please use 'put <key> <value>'");
+                            }
+                            break;
+
+                        case "remove":
+                            dao.remove(key.getBytes());
+                            break;
+
+                        default:
+                            System.err.println("Unsupported command: " + cmd);
+                    }
                 }
-
-                final String[] tokens = line.split(" ");
-                final String cmd = tokens[0];
-                final String key = tokens[1];
-
-                switch (cmd) {
-                    case "get":
-                        try {
-                            System.out.println(new String(dao.get(key.getBytes())));
-                        } catch (NoSuchElementException e) {
-                            System.err.println("absent");
-                        }
-                        break;
-
-                    case "put":
-                        final String value = tokens[2];
-                        dao.upsert(key.getBytes(), value.getBytes());
-                        break;
-
-                    case "remove":
-                        dao.remove(key.getBytes());
-                        break;
-
-                    default:
-                        System.err.println("Unsupported command: " + cmd);
-                }
+            } finally {
+                dao.close();
             }
         }
     }
