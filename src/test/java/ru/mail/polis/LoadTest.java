@@ -73,6 +73,7 @@ public class LoadTest {
                 assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i)));
                 value = next(value);
             }
+            dao.close();
         } finally {
             Files.recursiveDelete(data);
         }
@@ -113,6 +114,7 @@ public class LoadTest {
                 assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i % keys)));
                 value = next(value);
             }
+            dao.close();
         } finally {
             Files.recursiveDelete(data);
         }
