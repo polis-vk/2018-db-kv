@@ -79,7 +79,7 @@ public class LoadTest {
         }
     }
 
-    @Ignore("Per aspera ad astra")
+    @Ignore("Just do it! (if you can)")
     @Test
     public void bulkReplace() throws IOException {
         final int keys = 10_000;
