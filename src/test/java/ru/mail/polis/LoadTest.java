@@ -16,7 +16,6 @@
 
 package ru.mail.polis;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -46,15 +45,15 @@ public class LoadTest {
         return current.add(BigInteger.ONE);
     }
 
-    @Ignore("Per aspera ad astra")
     @Test
     public void bulkInsert() throws IOException {
         final int keys = 100_000;
         final BigInteger initial = initial();
 
         final File data = Files.createTempDirectory();
+        KVDao dao = null;
         try {
-            KVDao dao = KVDaoFactory.create(data);
+            dao = KVDaoFactory.create(data);
 
             // Fill the storage
             BigInteger value = initial;
@@ -74,11 +73,11 @@ public class LoadTest {
                 value = next(value);
             }
         } finally {
+            dao.close();
             Files.recursiveDelete(data);
         }
     }
 
-    @Ignore("Just do it! (if you can)")
     @Test
     public void bulkReplace() throws IOException {
         final int keys = 10_000;
@@ -86,8 +85,9 @@ public class LoadTest {
         final BigInteger initial = initial();
 
         final File data = Files.createTempDirectory();
+        KVDao dao = null;
         try {
-            KVDao dao = KVDaoFactory.create(data);
+            dao = KVDaoFactory.create(data);
 
             // Fill the storage
             BigInteger value = initial;
@@ -114,6 +114,7 @@ public class LoadTest {
                 value = next(value);
             }
         } finally {
+            dao.close();
             Files.recursiveDelete(data);
         }
     }

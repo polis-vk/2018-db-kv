@@ -14,6 +14,10 @@ dependencies {
     // Annotations for better code documentation
     compile("com.intellij:annotations:12.0")
 
+    // Xodus
+    compile("org.jetbrains.xodus:xodus-openAPI:1.2.2")
+    compile("org.jetbrains.xodus:xodus-environment:1.2.2")
+
     // JUnit test framework
     testCompile("junit:junit:4.12")
 }
