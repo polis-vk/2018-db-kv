@@ -1,24 +1,24 @@
 package ru.mail.polis.shnus.lsm.sstable.model;
 
-import java.nio.channels.FileChannel;
+import java.nio.MappedByteBuffer;
 
 public class SSTableLocation {
-    private FileChannel fileChannel;
+
+    private MappedByteBuffer mappedByteBuffer;
     private long fileNumber;
     private long offset;
     private long length;
 
 
-    public SSTableLocation(FileChannel fileChannel, long fileNumber, long offset, long length) {
-        this.fileChannel = fileChannel;
+    public SSTableLocation(MappedByteBuffer mappedByteBuffer, long fileNumber, long offset, long length) {
+        this.mappedByteBuffer = mappedByteBuffer;
         this.fileNumber = fileNumber;
         this.offset = offset;
         this.length = length;
     }
 
-
-    public FileChannel getFileChannel() {
-        return fileChannel;
+    public MappedByteBuffer getMappedByteBuffer() {
+        return mappedByteBuffer;
     }
 
     public long getFileNumber() {

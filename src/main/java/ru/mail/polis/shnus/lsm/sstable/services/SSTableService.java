@@ -1,16 +1,14 @@
 package ru.mail.polis.shnus.lsm.sstable.services;
 
 import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 
-public class SSTableService implements Closeable {
+public class SSTableService {
 
     private static File data;
 
@@ -22,10 +20,6 @@ public class SSTableService implements Closeable {
 
     }
 
-    public static void unmap(MappedByteBuffer buffer) {
-        sun.misc.Cleaner cleaner = ((DirectBuffer) buffer).cleaner();
-        cleaner.clean();
-    }
 
     private byte[] getBytesByOffset(long fileNumber, long offset, long length) throws IOException {
         RandomAccessFile ras = new RandomAccessFile(Utils.getPath(data, Utils.getDataNameByNumber((int) fileNumber)), "rws");
@@ -36,13 +30,11 @@ public class SSTableService implements Closeable {
         return bytes;
     }
 
-    private byte[] getFastBytesByOffset(FileChannel fileChannel, long offset, long length, long fileNumber) throws IOException {
+    private byte[] getFastBytesByOffset(MappedByteBuffer mappedByteBuffer, long offset, long length) throws IOException {
         byte[] bytes = new byte[(int) length];
 
-        MappedByteBuffer in = fileChannel.map(FileChannel.MapMode.READ_ONLY, offset, length);
-        in.get(bytes, 0, (int) length);
-
-        unmap(in);
+        mappedByteBuffer.position((int) offset);
+        mappedByteBuffer.get(bytes, 0, (int) length);
 
         return bytes;
     }
@@ -52,7 +44,7 @@ public class SSTableService implements Closeable {
     }
 
     public byte[] getFastBytesFromSSTable(SSTableLocation valueLocation) throws IOException {
-        return getFastBytesByOffset(valueLocation.getFileChannel(), valueLocation.getOffset(), valueLocation.getLength(), valueLocation.getFileNumber());
+        return getFastBytesByOffset(valueLocation.getMappedByteBuffer(), valueLocation.getOffset(), valueLocation.getLength());
     }
 
 
@@ -63,10 +55,4 @@ public class SSTableService implements Closeable {
         return fileLength;
     }
 
-    @Override
-    public void close() throws IOException {
-        //   for(Map.Entry<String, FileChannel> entry: fileChannelMap.entrySet()){
-        //     entry.getValue().close();
-        //  }
-    }
 }

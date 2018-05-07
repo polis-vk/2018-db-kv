@@ -48,10 +48,6 @@ public class IndexTables implements Closeable {
         return numbers;
     }
 
-    public void upload(String newIndexFilePath) throws IOException {
-        indexes.add(new Index(newIndexFilePath));
-    }
-
     public SSTableLocation getValueLocationByKey(byte[] key) {
         ByteWrapper keyWrapper = new ByteWrapper(key);
         SSTableLocation location = null;

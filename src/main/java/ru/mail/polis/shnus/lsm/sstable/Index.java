@@ -5,8 +5,10 @@ import ru.mail.polis.shnus.lsm.sstable.model.KeyAndOffset;
 import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
 import ru.mail.polis.shnus.lsm.sstable.services.SSTableService;
 import ru.mail.polis.shnus.lsm.sstable.services.Utils;
+import sun.nio.ch.DirectBuffer;
 
 import java.io.*;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +20,7 @@ public class Index implements Closeable {
     static File dataPath;
     private SSTableService ssTableService = new SSTableService();
     private FileChannel fileChannel;
+    private MappedByteBuffer mappedByteBuffer;
 
     //index number which correspond to data number
     private long indexNumber;
@@ -29,17 +32,16 @@ public class Index implements Closeable {
         uploadIndexByNumber();
     }
 
-    Index(String path) throws IOException {
-        indexNumber = Utils.getNumberFromIndexPath(path);
-        uploadIndexByPath();
-    }
-
-    public Index(List<KeyAndOffset> index, long fileNumber, long timeStamp) throws FileNotFoundException {
+    public Index(List<KeyAndOffset> index, long fileNumber, long timeStamp) throws IOException {
         indexNumber = fileNumber;
         this.timeStamp = timeStamp;
         this.index = index;
-        fileChannel = new FileInputStream(Utils.getPath(dataPath, Utils.getDataNameByNumber((int) indexNumber))).getChannel();
+        initIO();
+    }
 
+    public static void unmap(MappedByteBuffer buffer) {
+        sun.misc.Cleaner cleaner = ((DirectBuffer) buffer).cleaner();
+        cleaner.clean();
     }
 
     private void uploadIndexByNumber() throws IOException {
@@ -48,8 +50,7 @@ public class Index implements Closeable {
 
     private void uploadIndexByPath() throws IOException {
         //create file channel for this index
-
-        fileChannel = new FileInputStream(Utils.getPath(dataPath, Utils.getDataNameByNumber((int) indexNumber))).getChannel();
+        initIO();
 
         index = new ArrayList<>();
 
@@ -98,11 +99,16 @@ public class Index implements Closeable {
             valueLength = nextKeyOffset - valueOffset;
             realKeyLength = valueOffset - realKeyOffset;
 
-            realKey = ssTableService.getFastBytesFromSSTable(new SSTableLocation(fileChannel, indexNumber, realKeyOffset, realKeyLength));
+            realKey = ssTableService.getFastBytesFromSSTable(new SSTableLocation(mappedByteBuffer, indexNumber, realKeyOffset, realKeyLength));
 
             index.add(new KeyAndOffset(new ByteWrapper(realKey), valueOffset, valueLength));
         }
         ras.close();
+    }
+
+    private void initIO() throws IOException {
+        fileChannel = new FileInputStream(Utils.getPath(dataPath, Utils.getDataNameByNumber((int) indexNumber))).getChannel();
+        mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
     }
 
     SSTableLocation findAndGetKeyLocation(ByteWrapper keyWrapper) {
@@ -112,7 +118,7 @@ public class Index implements Closeable {
             return null;
         }
         KeyAndOffset keyAndOffset = index.get(pos);
-        return new SSTableLocation(fileChannel, indexNumber, keyAndOffset.getOffset(), keyAndOffset.getLength());
+        return new SSTableLocation(mappedByteBuffer, indexNumber, keyAndOffset.getOffset(), keyAndOffset.getLength());
     }
 
     long getTimeStamp() {
@@ -121,6 +127,7 @@ public class Index implements Closeable {
 
     @Override
     public void close() throws IOException {
+        unmap(mappedByteBuffer);
         fileChannel.close();
     }
 
