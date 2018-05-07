@@ -18,6 +18,7 @@ package ru.mail.polis;
 
 import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.kirillyarulin.DiskKVDao;
+import ru.mail.polis.kirillyarulin.DiskKVDao2;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +55,7 @@ public final class KVDaoFactory {
             throw new IllegalArgumentException("Path is not a directory: " + data);
         }
 
-        return new DiskKVDao(data);
+        return new DiskKVDao2(data);
 
 
     }
