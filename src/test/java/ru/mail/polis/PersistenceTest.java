@@ -22,10 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Persistence tests for {@link KVDao} implementations
@@ -79,6 +76,46 @@ public class PersistenceTest extends TestBase {
         } finally {
             Files.recursiveDelete(data);
         }
+    }
+
+    @Test
+    public void remove() throws IOException {
+        final int size = 10;
+        final byte[][] keys = new byte[size][];
+        for (int i = 0; i < keys.length; i++) {
+            keys[i] = randomKey();
+        }
+        final byte[][] values = new byte[size][];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = randomValue();
+        }
+        final int toBeDeleted = 6;
+
+        final File data = Files.createTempDirectory();
+        try {
+            KVDao dao = KVDaoFactory.create(data);
+            for (int i = 0; i < size; i++) {
+                dao.upsert(keys[i], values[i]);
+            }
+            dao.remove(keys[toBeDeleted]);
+            dao.close();
+
+            // Recreate dao
+            dao = KVDaoFactory.create(data);
+            for (int i = 0; i < size; i++) {
+                if (i != toBeDeleted) {
+                    assertArrayEquals(values[i], dao.get(keys[i]));
+                }
+            }
+            try {
+                dao.get(keys[toBeDeleted]);
+                fail();
+            } catch (NoSuchElementException ignored) {
+            }
+        } finally {
+            Files.recursiveDelete(data);
+        }
+
     }
 
     @Test(expected = NoSuchElementException.class)
