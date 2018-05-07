@@ -24,7 +24,7 @@ public class KVDaoImpl implements KVDao {
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
         byte[] value = memTable.get(key);
 
-        if(value == null){
+        if (value == null) {
             throw new NoSuchElementException();
         } else {
             return value;
@@ -36,7 +36,7 @@ public class KVDaoImpl implements KVDao {
         memTable.upsert(key, value);
     }
 
-    public void test(){
+    public void test() {
         memTable.test(new byte[]{0}, new byte[]{1});
     }
 

@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class IndexTables implements Closeable {
     private final File indexPath;
@@ -56,15 +55,15 @@ public class IndexTables implements Closeable {
     public SSTableLocation getValueLocationByKey(byte[] key) {
         ByteWrapper keyWrapper = new ByteWrapper(key);
         SSTableLocation location = null;
-        SSTableLocation curLocation = null;
+        SSTableLocation curLocation;
         long maxTimeStamp = 0;
         Index index;
-        for (int i = indexes.size()-1; i >= 0; i-- ) {
+        for (int i = indexes.size() - 1; i >= 0; i--) {
             index = indexes.get(i);
 
             if (index.getTimeStamp() > maxTimeStamp) {
                 curLocation = index.findAndGetKeyLocation(keyWrapper);
-                if(curLocation!=null){
+                if (curLocation != null) {
                     location = curLocation;
                     maxTimeStamp = index.getTimeStamp();
                 }
@@ -75,13 +74,13 @@ public class IndexTables implements Closeable {
     }
 
 
-    public void addIndexByList(List<KeyAndOffset> index, long fileNumber, long timeStamp) {
+    public void addIndexByList(List<KeyAndOffset> index, long fileNumber, long timeStamp) throws IOException {
         indexes.add(new Index(index, fileNumber, timeStamp));
     }
 
     @Override
     public void close() throws IOException {
-        for(Index index: indexes){
+        for (Index index : indexes) {
             index.close();
         }
     }

@@ -9,7 +9,6 @@ import ru.mail.polis.shnus.lsm.sstable.services.Utils;
 import java.io.*;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -43,33 +42,38 @@ public class DiskMaster implements Closeable {
         List<KeyAndOffset> index = new ArrayList<>();
         try (
                 OutputStream newTable = new FileOutputStream(newTableAndIndexPath[0]);
-                OutputStream newIndex = new FileOutputStream(newTableAndIndexPath[1])
+                BufferedOutputStream bufNewTable = new BufferedOutputStream(newTable, 1048576);
+                OutputStream newIndex = new FileOutputStream(newTableAndIndexPath[1]);
+                BufferedOutputStream bufNewIndex = new BufferedOutputStream(newIndex, 1048576)
         ) {
             byte[] key;
             byte[] value;
             long offset = 0;
             timestamp = new Timestamp(System.currentTimeMillis());
+            byte[] timeStampByte = Utils.longToBytes(timestamp.getTime());
             //each index file has timestamp on the top
-            newIndex.write(Utils.longToBytes(timestamp.getTime()));
+            bufNewIndex.write(timeStampByte, 0, timeStampByte.length);
             for (Map.Entry<ByteWrapper, byte[]> entry : table.entrySet()) {
                 key = entry.getKey().getBytes();
                 value = entry.getValue();
 
                 //writing to sstable
-                newTable.write(key);
-                newTable.write(value);
+                bufNewTable.write(key);
+                bufNewTable.write(value);
 
                 //Writing to index file and index in memory
                 //Offset of key instead of original key,
                 //because i dont know how to resolve different length, line break and separator problems
                 //to read original key from index file
-                newIndex.write(Utils.longToBytes(offset));
+                bufNewIndex.write(Utils.longToBytes(offset));
                 offset += key.length;
-                newIndex.write(Utils.longToBytes(offset));
+                bufNewIndex.write(Utils.longToBytes(offset));
                 //in memory index
                 index.add(new KeyAndOffset(entry.getKey(), offset, value.length));
                 offset += value.length;
             }
+            bufNewTable.flush();
+            bufNewIndex.flush();
         }
         //upload index to the memory, non efficiently but anyway
         indexTables.addIndexByList(index, Utils.getNumberFromIndexPath(newTableAndIndexPath[1]), timestamp.getTime());

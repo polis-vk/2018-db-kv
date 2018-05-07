@@ -9,7 +9,7 @@ public class SSTableLocation {
     private long length;
 
 
-    public SSTableLocation(FileChannel fileChannel, long fileNumber, long offset, long length){
+    public SSTableLocation(FileChannel fileChannel, long fileNumber, long offset, long length) {
         this.fileChannel = fileChannel;
         this.fileNumber = fileNumber;
         this.offset = offset;

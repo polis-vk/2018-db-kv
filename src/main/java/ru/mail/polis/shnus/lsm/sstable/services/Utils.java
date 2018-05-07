@@ -37,6 +37,6 @@ public class Utils {
 
     public static long getNumberFromIndexPath(String path) {
         String[] s = path.split("_");
-        return Integer.valueOf(s[s.length-2]);
+        return Integer.valueOf(s[s.length - 2]);
     }
 }

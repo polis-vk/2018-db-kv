@@ -3,10 +3,12 @@ package ru.mail.polis.shnus.lsm.sstable.services;
 import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
 import sun.nio.ch.DirectBuffer;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
 
 public class SSTableService implements Closeable {
 
@@ -37,15 +39,10 @@ public class SSTableService implements Closeable {
     private byte[] getFastBytesByOffset(FileChannel fileChannel, long offset, long length, long fileNumber) throws IOException {
         byte[] bytes = new byte[(int) length];
 
-
-        FileChannel channel =  FileChannel.open(Paths.get(Utils.getPath(data, Utils.getDataNameByNumber((int) fileNumber))));
-
-        MappedByteBuffer in = channel.map(FileChannel.MapMode.READ_ONLY, offset, length);
+        MappedByteBuffer in = fileChannel.map(FileChannel.MapMode.READ_ONLY, offset, length);
         in.get(bytes, 0, (int) length);
 
         unmap(in);
-
-        channel.close();
 
         return bytes;
     }
@@ -55,9 +52,8 @@ public class SSTableService implements Closeable {
     }
 
     public byte[] getFastBytesFromSSTable(SSTableLocation valueLocation) throws IOException {
-        return getFastBytesByOffset(valueLocation.getFileChannel(),  valueLocation.getOffset(), valueLocation.getLength(), valueLocation.getFileNumber());
+        return getFastBytesByOffset(valueLocation.getFileChannel(), valueLocation.getOffset(), valueLocation.getLength(), valueLocation.getFileNumber());
     }
-
 
 
     public long getLengthByNumber(long fileNumber) throws IOException {
@@ -69,8 +65,8 @@ public class SSTableService implements Closeable {
 
     @Override
     public void close() throws IOException {
-     //   for(Map.Entry<String, FileChannel> entry: fileChannelMap.entrySet()){
-       //     entry.getValue().close();
-      //  }
+        //   for(Map.Entry<String, FileChannel> entry: fileChannelMap.entrySet()){
+        //     entry.getValue().close();
+        //  }
     }
 }

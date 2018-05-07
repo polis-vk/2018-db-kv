@@ -36,7 +36,7 @@ public class MemTable implements KVDao {
 
         value = diskMaster.getValueByKey(key);
 
-        if(value == null){
+        if (value == null) {
             throw new NoSuchElementException();
         }
 
@@ -56,7 +56,7 @@ public class MemTable implements KVDao {
 
         ByteWrapper keyWrapper = new ByteWrapper(key);
 
-        if(table.containsKey(keyWrapper)) {
+        if (table.containsKey(keyWrapper)) {
             size = size - key.length - table.put(keyWrapper, value).length;
         } else {
             table.put(keyWrapper, value);
@@ -81,7 +81,9 @@ public class MemTable implements KVDao {
 
     @Override
     public void close() throws IOException {
-        flush();
+        if (table.size() > 0) {
+            flush();
+        }
         diskMaster.close();
     }
 }

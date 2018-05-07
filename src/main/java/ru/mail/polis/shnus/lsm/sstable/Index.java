@@ -7,17 +7,17 @@ import ru.mail.polis.shnus.lsm.sstable.services.SSTableService;
 import ru.mail.polis.shnus.lsm.sstable.services.Utils;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 
 public class Index implements Closeable {
     static File indexPath;
     static File dataPath;
     private SSTableService ssTableService = new SSTableService();
-  //  private FileChannel fileChannel;
+    private FileChannel fileChannel;
 
     //index number which correspond to data number
     private long indexNumber;
@@ -34,10 +34,12 @@ public class Index implements Closeable {
         uploadIndexByPath();
     }
 
-    public Index(List<KeyAndOffset> index, long fileNumber, long timeStamp) {
+    public Index(List<KeyAndOffset> index, long fileNumber, long timeStamp) throws FileNotFoundException {
         indexNumber = fileNumber;
         this.timeStamp = timeStamp;
         this.index = index;
+        fileChannel = new FileInputStream(Utils.getPath(dataPath, Utils.getDataNameByNumber((int) indexNumber))).getChannel();
+
     }
 
     private void uploadIndexByNumber() throws IOException {
@@ -45,7 +47,12 @@ public class Index implements Closeable {
     }
 
     private void uploadIndexByPath() throws IOException {
+        //create file channel for this index
+
+        fileChannel = new FileInputStream(Utils.getPath(dataPath, Utils.getDataNameByNumber((int) indexNumber))).getChannel();
+
         index = new ArrayList<>();
+
         String indexFilePath = Utils.getPath(indexPath, Utils.getIndexNameByNumber((int) indexNumber));
         RandomAccessFile ras = new RandomAccessFile(indexFilePath, "rwd");
 
@@ -68,17 +75,17 @@ public class Index implements Closeable {
         ras.seek(currentPosition);
         ras.read(nextKeyOffsetBytes, 0, 8);
         nextKeyOffset = Utils.bytesToLong(nextKeyOffsetBytes);
-        currentPosition+=8;
+        currentPosition += 8;
 
         while (currentPosition < ras.length()) {
 
-            realKeyOffset=nextKeyOffset;
+            realKeyOffset = nextKeyOffset;
 
             ras.seek(currentPosition);
             ras.read(offsetBytes, 0, 8);
             currentPosition += 8;
 
-            if(currentPosition >= ras.length()){
+            if (currentPosition >= ras.length()) {
                 nextKeyOffset = ssTableService.getLengthByNumber(indexNumber);
             } else {
                 ras.seek(currentPosition);
@@ -87,16 +94,11 @@ public class Index implements Closeable {
                 nextKeyOffset = Utils.bytesToLong(nextKeyOffsetBytes);
             }
 
-
             valueOffset = Utils.bytesToLong(offsetBytes);
             valueLength = nextKeyOffset - valueOffset;
             realKeyLength = valueOffset - realKeyOffset;
 
-            //create file channel for this index
-            //FileChannel fileChannel = new FileInputStream(Utils.getPath(dataPath,Utils.getDataNameByNumber((int) indexNumber))).getChannel();
-
-
-            realKey = ssTableService.getFastBytesFromSSTable(new SSTableLocation(null, indexNumber, realKeyOffset, realKeyLength));
+            realKey = ssTableService.getFastBytesFromSSTable(new SSTableLocation(fileChannel, indexNumber, realKeyOffset, realKeyLength));
 
             index.add(new KeyAndOffset(new ByteWrapper(realKey), valueOffset, valueLength));
         }
@@ -110,7 +112,7 @@ public class Index implements Closeable {
             return null;
         }
         KeyAndOffset keyAndOffset = index.get(pos);
-        return new SSTableLocation(null, indexNumber, keyAndOffset.getOffset(), keyAndOffset.getLength());
+        return new SSTableLocation(fileChannel, indexNumber, keyAndOffset.getOffset(), keyAndOffset.getLength());
     }
 
     long getTimeStamp() {
@@ -119,7 +121,7 @@ public class Index implements Closeable {
 
     @Override
     public void close() throws IOException {
-      //  fileChannel.close();
+        fileChannel.close();
     }
 
 }
