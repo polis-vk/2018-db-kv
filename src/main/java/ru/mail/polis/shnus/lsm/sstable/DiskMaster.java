@@ -1,12 +1,16 @@
 package ru.mail.polis.shnus.lsm.sstable;
 
 import ru.mail.polis.shnus.ByteWrapper;
-import ru.mail.polis.shnus.lsm.sstable.services.SSTableLocation;
+import ru.mail.polis.shnus.lsm.sstable.model.KeyAndOffset;
+import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
 import ru.mail.polis.shnus.lsm.sstable.services.SSTableService;
 import ru.mail.polis.shnus.lsm.sstable.services.Utils;
 
 import java.io.*;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class DiskMaster implements Closeable {
@@ -36,6 +40,7 @@ public class DiskMaster implements Closeable {
     public void flush(Map<ByteWrapper, byte[]> table) throws IOException {
         String[] newTableAndIndexPath = getTableAndIndexPath(getNextTableAndIndexName());
         Timestamp timestamp;
+        List<KeyAndOffset> index = new ArrayList<>();
         try (
                 OutputStream newTable = new FileOutputStream(newTableAndIndexPath[0]);
                 OutputStream newIndex = new FileOutputStream(newTableAndIndexPath[1])
@@ -54,19 +59,20 @@ public class DiskMaster implements Closeable {
                 newTable.write(key);
                 newTable.write(value);
 
-                //writing to index file
-                //offset of key instead of original key,
-                // because i dont know how to resolve different length, line break and separator problems
+                //Writing to index file and index in memory
+                //Offset of key instead of original key,
+                //because i dont know how to resolve different length, line break and separator problems
+                //to read original key from index file
                 newIndex.write(Utils.longToBytes(offset));
                 offset += key.length;
-
                 newIndex.write(Utils.longToBytes(offset));
+                //in memory index
+                index.add(new KeyAndOffset(entry.getKey(), offset, value.length));
                 offset += value.length;
             }
         }
         //upload index to the memory, non efficiently but anyway
-      //  indexTables.addIndexByMap(table, Utils.getNumberFromIndexPath(newTableAndIndexPath[1]), timestamp.getTime());
-        indexTables.upload(newTableAndIndexPath[1]);
+        indexTables.addIndexByList(index, Utils.getNumberFromIndexPath(newTableAndIndexPath[1]), timestamp.getTime());
     }
 
     public byte[] getValueByKey(byte[] key) throws IOException {

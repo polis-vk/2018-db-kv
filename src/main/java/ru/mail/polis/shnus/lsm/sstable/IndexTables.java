@@ -1,7 +1,8 @@
 package ru.mail.polis.shnus.lsm.sstable;
 
 import ru.mail.polis.shnus.ByteWrapper;
-import ru.mail.polis.shnus.lsm.sstable.services.SSTableLocation;
+import ru.mail.polis.shnus.lsm.sstable.model.KeyAndOffset;
+import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
 
 import java.io.Closeable;
 import java.io.File;
@@ -73,8 +74,9 @@ public class IndexTables implements Closeable {
         return location;
     }
 
-    public void addIndexByMap(Map<ByteWrapper, byte[]> table, long fileNumber, long timeStamp) {
-        indexes.add(new Index(table,fileNumber, timeStamp));
+
+    public void addIndexByList(List<KeyAndOffset> index, long fileNumber, long timeStamp) {
+        indexes.add(new Index(index, fileNumber, timeStamp));
     }
 
     @Override
@@ -83,4 +85,6 @@ public class IndexTables implements Closeable {
             index.close();
         }
     }
+
+
 }

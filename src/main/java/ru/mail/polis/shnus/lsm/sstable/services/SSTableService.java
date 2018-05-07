@@ -1,15 +1,12 @@
 package ru.mail.polis.shnus.lsm.sstable.services;
 
+import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 
 public class SSTableService implements Closeable {
 

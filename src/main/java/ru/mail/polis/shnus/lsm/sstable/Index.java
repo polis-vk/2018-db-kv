@@ -1,13 +1,12 @@
 package ru.mail.polis.shnus.lsm.sstable;
 
-import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.shnus.ByteWrapper;
-import ru.mail.polis.shnus.lsm.sstable.services.SSTableLocation;
+import ru.mail.polis.shnus.lsm.sstable.model.KeyAndOffset;
+import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
 import ru.mail.polis.shnus.lsm.sstable.services.SSTableService;
 import ru.mail.polis.shnus.lsm.sstable.services.Utils;
 
 import java.io.*;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +34,10 @@ public class Index implements Closeable {
         uploadIndexByPath();
     }
 
-    public Index(Map<ByteWrapper, byte[]> table, long fileNumber, long timeStamp) {
+    public Index(List<KeyAndOffset> index, long fileNumber, long timeStamp) {
+        indexNumber = fileNumber;
+        this.timeStamp = timeStamp;
+        this.index = index;
     }
 
     private void uploadIndexByNumber() throws IOException {
@@ -52,7 +54,6 @@ public class Index implements Closeable {
         ras.read(timeStampBytes, 0, 8);
         timeStamp = Utils.bytesToLong(timeStampBytes);
 
-        byte[] keyOffsetBytes = new byte[8];
         byte[] offsetBytes = new byte[8];
         byte[] nextKeyOffsetBytes = new byte[8];
         byte[] realKey;
@@ -109,7 +110,7 @@ public class Index implements Closeable {
             return null;
         }
         KeyAndOffset keyAndOffset = index.get(pos);
-        return new SSTableLocation(null, indexNumber, keyAndOffset.offset, keyAndOffset.length);
+        return new SSTableLocation(null, indexNumber, keyAndOffset.getOffset(), keyAndOffset.getLength());
     }
 
     long getTimeStamp() {
@@ -121,22 +122,4 @@ public class Index implements Closeable {
       //  fileChannel.close();
     }
 
-
-    private static class KeyAndOffset implements Comparable<KeyAndOffset> {
-        ByteWrapper key;
-        long offset;
-        long length;
-
-        KeyAndOffset(ByteWrapper key, long offset, long length) {
-            this.key = key;
-            this.offset = offset;
-            this.length = length;
-        }
-
-
-        @Override
-        public int compareTo(@NotNull KeyAndOffset o) {
-            return key.compareTo(o.key);
-        }
-    }
 }

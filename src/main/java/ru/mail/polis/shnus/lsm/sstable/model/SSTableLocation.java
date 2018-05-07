@@ -1,4 +1,4 @@
-package ru.mail.polis.shnus.lsm.sstable.services;
+package ru.mail.polis.shnus.lsm.sstable.model;
 
 import java.nio.channels.FileChannel;
 

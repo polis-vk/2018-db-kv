@@ -44,7 +44,6 @@ public class PersistenceTest extends TestBase {
             final KVDao dao = KVDaoFactory.create(data);
             dao.upsert(key, randomValue());
             dao.close();
-          //  KVDaoFactory.create(data);
         } finally {
             Files.recursiveDelete(data);
         }
@@ -62,7 +61,7 @@ public class PersistenceTest extends TestBase {
     }
 
     @Test
-    public void reopen() throws IOException, InterruptedException {
+    public void reopen() throws IOException {
         // Reference value
         final byte[] key = randomKey();
         final byte[] value = randomValue();
@@ -78,6 +77,24 @@ public class PersistenceTest extends TestBase {
             dao = KVDaoFactory.create(data);
             assertArrayEquals(value, dao.get(key));
         } finally {
+            Files.recursiveDelete(data);
+        }
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void markedRemoveTest() throws IOException{
+        File data = Files.createTempDirectory();
+        KVDao dao = KVDaoFactory.create(data);
+        try {
+            final byte[] key = randomKey();
+            final byte[] value = randomValue();
+            dao.upsert(key, value);
+            dao.remove(key);
+            dao.close();
+            dao = KVDaoFactory.create(data);
+            dao.get(key);
+        } finally {
+            dao.close();
             Files.recursiveDelete(data);
         }
     }
