@@ -46,7 +46,7 @@ public class LoadTest {
         return current.add(BigInteger.ONE);
     }
 
-    @Ignore("Per aspera ad astra")
+
     @Test
     public void bulkInsert() throws IOException {
         final int keys = 100_000;
@@ -62,10 +62,12 @@ public class LoadTest {
                 dao.upsert(keyFrom(i), value.toByteArray());
                 value = next(value);
             }
-
             // Reopen
+            System.out.println("1");
             dao.close();
+            System.out.println("2");
             dao = KVDaoFactory.create(data);
+            System.out.println("3");
 
             // Check the storage
             value = initial;
@@ -73,6 +75,7 @@ public class LoadTest {
                 assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i)));
                 value = next(value);
             }
+
         } finally {
             Files.recursiveDelete(data);
         }

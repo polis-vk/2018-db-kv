@@ -84,7 +84,9 @@ public class KVClient {
                     default:
                         System.err.println("Unsupported command: " + cmd);
                 }
+
             }
+            dao.close();
         }
     }
 }

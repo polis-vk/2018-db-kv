@@ -44,6 +44,7 @@ public class PersistenceTest extends TestBase {
             final KVDao dao = KVDaoFactory.create(data);
             dao.upsert(key, randomValue());
             dao.close();
+          //  KVDaoFactory.create(data);
         } finally {
             Files.recursiveDelete(data);
         }
@@ -61,7 +62,7 @@ public class PersistenceTest extends TestBase {
     }
 
     @Test
-    public void reopen() throws IOException {
+    public void reopen() throws IOException, InterruptedException {
         // Reference value
         final byte[] key = randomKey();
         final byte[] value = randomValue();
