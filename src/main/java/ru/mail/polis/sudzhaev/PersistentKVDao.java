@@ -19,6 +19,8 @@ public class PersistentKVDao implements KVDao {
         File data = new File(directory, "db");
         this.db = DBMaker
                 .fileDB(data)
+                .fileMmapEnableIfSupported()
+                .fileMmapPreclearDisable()
                 .make();
         this.storage = db.hashMap(data.getName())
                 .keySerializer(Serializer.BYTE_ARRAY)
