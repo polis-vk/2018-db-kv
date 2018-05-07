@@ -31,9 +31,28 @@ public class ByteWrapper implements Comparable {
     }
 
     @Override
-    public int compareTo(@NotNull Object o) { //to long? no ideas
-        String o1 = Arrays.toString(data);
-        String o2 = Arrays.toString(((ByteWrapper) o).getBytes());
-        return o1.compareTo(o2);
+    public int compareTo(@NotNull Object o) {
+
+        byte[] o1 = getBytes();
+        byte[] o2 = ((ByteWrapper) o).getBytes();
+        if (o1.length > o2.length) {
+            return 1;
+        }
+        if (o1.length < o2.length) {
+            return -1;
+        }
+        for (int i = 0; i < o1.length; i++) {
+            if (o1[i] > o2[i]) {
+                return 1;
+            }
+
+            if (o1[i] < o2[i]) {
+                return -1;
+            }
+        }
+
+        return 0;
     }
+
+
 }
