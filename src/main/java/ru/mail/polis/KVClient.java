@@ -54,10 +54,13 @@ public class KVClient {
 
         try (final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             String line;
-            while (true) {
+            try {
+                while (true) {
+
                     line = reader.readLine();
 
                     if ("quit".equals(line)) break;
+
 
                     if (line.isEmpty()) {
                         continue;
@@ -81,7 +84,7 @@ public class KVClient {
                                 final String value = tokens[2];
                                 dao.upsert(key.getBytes(), value.getBytes());
                             } catch (ArrayIndexOutOfBoundsException e) {
-                                System.err.println("wrong comand, pls use 'put <key> <value>'");
+                                System.err.println("invalid command, please use 'put <key> <value>'");
                             }
                             break;
 
@@ -92,10 +95,10 @@ public class KVClient {
                         default:
                             System.err.println("Unsupported command: " + cmd);
                     }
-
+                }
+            } finally {
+                dao.close();
             }
-        } finally {
-            dao.close();
         }
     }
 }
