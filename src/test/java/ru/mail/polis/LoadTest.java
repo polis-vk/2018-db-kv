@@ -53,9 +53,8 @@ public class LoadTest {
         final BigInteger initial = initial();
 
         final File data = Files.createTempDirectory();
+        KVDao dao = KVDaoFactory.create(data);
         try {
-            KVDao dao = KVDaoFactory.create(data);
-
             // Fill the storage
             BigInteger value = initial;
             for (int i = 0; i < keys; i++) {
@@ -73,8 +72,8 @@ public class LoadTest {
                 assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i)));
                 value = next(value);
             }
-            dao.close();
         } finally {
+            dao.close();
             Files.recursiveDelete(data);
         }
     }
@@ -87,9 +86,8 @@ public class LoadTest {
         final BigInteger initial = initial();
 
         final File data = Files.createTempDirectory();
+        KVDao dao = KVDaoFactory.create(data);
         try {
-            KVDao dao = KVDaoFactory.create(data);
-
             // Fill the storage
             BigInteger value = initial;
             for (int i = 0; i < ops; i++) {
@@ -114,9 +112,11 @@ public class LoadTest {
                 assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i % keys)));
                 value = next(value);
             }
-            dao.close();
+
         } finally {
+            dao.close();
             Files.recursiveDelete(data);
         }
+
     }
 }
