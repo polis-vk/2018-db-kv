@@ -23,7 +23,9 @@ public class KVServiceFactory implements KVDao {
 
     public KVServiceFactory(File directory) {
         this.data = new File(directory,"db");
-        this.db = DBMaker.fileDB(data).make();
+        this.db = DBMaker.fileDB(data).fileChannelEnable()
+                .fileMmapPreclearDisable().fileMmapEnable()
+                .fileMmapEnableIfSupported().make();
         this.storage = db.hashMap(data.getName()).keySerializer(Serializer.BYTE_ARRAY).valueSerializer(Serializer.BYTE_ARRAY).createOrOpen();
     }
 
