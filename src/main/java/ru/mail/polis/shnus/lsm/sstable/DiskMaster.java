@@ -40,6 +40,7 @@ public class DiskMaster implements Closeable {
         String[] newTableAndIndexPath = getTableAndIndexPath(getNextTableAndIndexName());
         Timestamp timestamp;
         List<KeyAndOffset> index = new ArrayList<>();
+        long indexPosition = 9;
         try (
                 OutputStream newTable = new FileOutputStream(newTableAndIndexPath[0]);
                 BufferedOutputStream bufNewTable = new BufferedOutputStream(newTable, 1048576);
@@ -61,6 +62,9 @@ public class DiskMaster implements Closeable {
                 bufNewTable.write(key);
                 bufNewTable.write(value);
 
+                //"Removed marker" in index file
+                //If equals to zero, this key should be loaded to the memory index
+                bufNewIndex.write(new byte[]{0}, 0, 1);
                 //Writing to index file and index in memory
                 //Offset of key instead of original key,
                 //because i dont know how to resolve different length, line break and separator problems
@@ -68,14 +72,16 @@ public class DiskMaster implements Closeable {
                 bufNewIndex.write(Utils.longToBytes(offset));
                 offset += key.length;
                 bufNewIndex.write(Utils.longToBytes(offset));
+
                 //in memory index
-                index.add(new KeyAndOffset(entry.getKey(), offset, value.length));
+                indexPosition += 17;
+                index.add(new KeyAndOffset(entry.getKey(), offset, value.length, indexPosition));
                 offset += value.length;
             }
             bufNewTable.flush();
             bufNewIndex.flush();
         }
-        //upload index to the memory, non efficiently but anyway
+
         indexTables.addIndexByList(index, Utils.getNumberFromIndexPath(newTableAndIndexPath[1]), timestamp.getTime());
     }
 
@@ -127,8 +133,13 @@ public class DiskMaster implements Closeable {
         return n + 1;
     }
 
+    public void findAndRemove(ByteWrapper key) throws IOException {
+        indexTables.removeValueByKey(key);
+    }
+
     @Override
     public void close() throws IOException {
         indexTables.close();
     }
+
 }

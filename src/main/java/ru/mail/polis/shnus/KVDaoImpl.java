@@ -36,13 +36,9 @@ public class KVDaoImpl implements KVDao {
         memTable.upsert(key, value);
     }
 
-    public void test() {
-        memTable.test(new byte[]{0}, new byte[]{1});
-    }
-
     @Override
     public void remove(@NotNull byte[] key) throws IOException {
-
+        memTable.remove(key);
     }
 
     @Override

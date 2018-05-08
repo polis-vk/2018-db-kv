@@ -43,15 +43,16 @@ public class MemTable implements KVDao {
         return value;
     }
 
-
+    //Should be optimized.
+    //After flushing it is not good that in memory data(tree map) is empty
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
         int insertSize = key.length + value.length;
 
-        if (size + insertSize > 50_000_000) {
+        if (size + insertSize > 60_000_000) {
             flush();
             size = 0;
-            table = new TreeMap<>(); //and hope to avoid outOfMemory by next value
+            table = new TreeMap<>();
         }
 
         ByteWrapper keyWrapper = new ByteWrapper(key);
@@ -59,19 +60,18 @@ public class MemTable implements KVDao {
         if (table.containsKey(keyWrapper)) {
             size = size - key.length - table.put(keyWrapper, value).length;
         } else {
+            //Hope to avoid outOfMemory by next value if it is extremely large (over 90Mb)
             table.put(keyWrapper, value);
         }
         size += insertSize;
     }
 
-    public void test(@NotNull byte[] key, @NotNull byte[] value) {
-
-    }
-
-
     @Override
     public void remove(@NotNull byte[] key) throws IOException {
+        ByteWrapper keyWrapper = new ByteWrapper(key);
+        table.remove(keyWrapper);
 
+        diskMaster.findAndRemove(keyWrapper);
     }
 
     private void flush() throws IOException {

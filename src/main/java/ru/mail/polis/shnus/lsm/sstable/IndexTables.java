@@ -26,8 +26,14 @@ public class IndexTables implements Closeable {
 
     private void loadIndexes() throws IOException {
         List<Integer> numbers = getNumbers();
+        Index nextIndex;
         for (Integer number : numbers) {
-            indexes.add(new Index(number));
+            nextIndex = new Index(number);
+            if (!nextIndex.isEmpty()) {
+                indexes.add(nextIndex);
+            } else {
+                nextIndex.close();
+            }
         }
     }
 
@@ -69,6 +75,21 @@ public class IndexTables implements Closeable {
         return location;
     }
 
+    public void removeValueByKey(ByteWrapper keyWrapper) throws IOException {
+        Index index;
+        int position;
+
+        for (int i = 0; i < indexes.size(); i++) {
+            index = indexes.get(i);
+
+            position = index.findAndGetRemoveMarkerLocation(keyWrapper);
+            if (position != -1) {
+                index.markAsRemoved(position);
+                index.removeFromMemory(keyWrapper);
+            }
+        }
+    }
+
 
     public void addIndexByList(List<KeyAndOffset> index, long fileNumber, long timeStamp) throws IOException {
         indexes.add(new Index(index, fileNumber, timeStamp));
@@ -80,6 +101,5 @@ public class IndexTables implements Closeable {
             index.close();
         }
     }
-
 
 }

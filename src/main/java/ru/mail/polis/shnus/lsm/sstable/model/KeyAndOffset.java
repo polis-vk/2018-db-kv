@@ -8,11 +8,28 @@ public class KeyAndOffset implements Comparable<KeyAndOffset> {
     private ByteWrapper key;
     private long offset;
     private long length;
+    private long indexPosition;
 
-    public KeyAndOffset(ByteWrapper key, long offset, long length) {
+    public KeyAndOffset(ByteWrapper key, long offset, long length, long indexPosition) {
         this.key = key;
         this.offset = offset;
         this.length = length;
+        this.indexPosition = indexPosition;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        KeyAndOffset that = (KeyAndOffset) o;
+
+        return key != null ? key.equals(that.key) : that.key == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return key != null ? key.hashCode() : 0;
     }
 
     public ByteWrapper getKey() {
@@ -30,5 +47,9 @@ public class KeyAndOffset implements Comparable<KeyAndOffset> {
     @Override
     public int compareTo(@NotNull KeyAndOffset o) {
         return key.compareTo(o.key);
+    }
+
+    public long getIndexPosition() {
+        return indexPosition;
     }
 }

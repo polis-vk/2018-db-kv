@@ -2,7 +2,6 @@ package ru.mail.polis.shnus.lsm.sstable.services;
 
 import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;

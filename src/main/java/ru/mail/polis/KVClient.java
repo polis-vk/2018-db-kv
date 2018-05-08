@@ -87,7 +87,6 @@ public class KVClient {
 
             }
             dao.close();
-            Files.recursiveDelete(data);
         }
     }
 }
