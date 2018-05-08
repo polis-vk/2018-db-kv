@@ -41,7 +41,7 @@ public class Index implements Closeable {
 
     public static void unmap(MappedByteBuffer buffer) {
         sun.misc.Cleaner cleaner = ((DirectBuffer) buffer).cleaner();
-        if(cleaner != null) {
+        if (cleaner != null) {
             cleaner.clean();
         }
     }
@@ -62,13 +62,13 @@ public class Index implements Closeable {
         RandomAccessFile ras = new RandomAccessFile(indexFilePath, "rw");
         long fileLength = ras.length();
 
-        byte[] timeStampBytes = new byte[8];
+        byte[] timeStampBytes = new byte[Utils.LONG_TO_BYTE_LENGTH];
         ras.seek(0);
-        ras.read(timeStampBytes, 0, 8);
+        ras.read(timeStampBytes, 0, Utils.LONG_TO_BYTE_LENGTH);
         timeStamp = Utils.bytesToLong(timeStampBytes);
 
-        byte[] valueOffsetBytes = new byte[8];
-        byte[] nextKeyOffsetBytes = new byte[8];
+        byte[] valueOffsetBytes = new byte[Utils.LONG_TO_BYTE_LENGTH];
+        byte[] nextKeyOffsetBytes = new byte[Utils.LONG_TO_BYTE_LENGTH];
         byte[] realKey;
         long realKeyOffset;
         long realKeyLength;
@@ -77,19 +77,19 @@ public class Index implements Closeable {
         long nextKeyOffset;
         long indexPosition;
 
-        long currentPosition = 8;
+        long currentPosition = Utils.LONG_TO_BYTE_LENGTH;
 
-        byte[] isRemovedChecker = new byte[1];
+        byte[] isRemovedChecker = new byte[Utils.BOOLEAN_TO_BYTE_LENGTH];
 
-        while(true){
+        while (true) {
             ras.seek(currentPosition);
-            ras.read(isRemovedChecker, 0, 1);
-            if(isRemovedChecker[0]==0){
-                currentPosition+=1;
+            ras.read(isRemovedChecker, 0, Utils.BOOLEAN_TO_BYTE_LENGTH);
+            if (isRemovedChecker[0] == 0) {
+                currentPosition += Utils.BOOLEAN_TO_BYTE_LENGTH;
                 break;
             } else {
-                currentPosition+=17;
-                if(currentPosition >= fileLength){
+                currentPosition += 2 * Utils.LONG_TO_BYTE_LENGTH + Utils.BOOLEAN_TO_BYTE_LENGTH;
+                if (currentPosition >= fileLength) {
                     ras.close();
                     return;
                 }
@@ -97,29 +97,29 @@ public class Index implements Closeable {
         }
 
         ras.seek(currentPosition);
-        ras.read(nextKeyOffsetBytes, 0, 8);
+        ras.read(nextKeyOffsetBytes, 0, Utils.LONG_TO_BYTE_LENGTH);
         nextKeyOffset = Utils.bytesToLong(nextKeyOffsetBytes);
         currentPosition += 8;
 
         while (currentPosition < fileLength) {
-            indexPosition = currentPosition - 8;
+            indexPosition = currentPosition - Utils.LONG_TO_BYTE_LENGTH;
 
             realKeyOffset = nextKeyOffset;
 
             ras.seek(currentPosition);
-            ras.read(valueOffsetBytes, 0, 8);
-            currentPosition += 8;
+            ras.read(valueOffsetBytes, 0, Utils.LONG_TO_BYTE_LENGTH);
+            currentPosition += Utils.LONG_TO_BYTE_LENGTH;
 
             if (currentPosition >= fileLength) {
                 nextKeyOffset = ssTableService.getLengthByNumber(indexNumber);
             } else {
                 ras.seek(currentPosition);
-                ras.read(isRemovedChecker, 0, 1);
-                currentPosition+=1;
+                ras.read(isRemovedChecker, 0, Utils.BOOLEAN_TO_BYTE_LENGTH);
+                currentPosition += Utils.BOOLEAN_TO_BYTE_LENGTH;
 
                 ras.seek(currentPosition);
-                ras.read(nextKeyOffsetBytes, 0, 8);
-                currentPosition += 8;
+                ras.read(nextKeyOffsetBytes, 0, Utils.LONG_TO_BYTE_LENGTH);
+                currentPosition += Utils.LONG_TO_BYTE_LENGTH;
                 nextKeyOffset = Utils.bytesToLong(nextKeyOffsetBytes);
             }
 
@@ -133,35 +133,35 @@ public class Index implements Closeable {
 
             //End of file
             //Index fully uploaded
-            if(currentPosition>=fileLength){
+            if (currentPosition >= fileLength) {
                 break;
             }
 
             //If next key is exist and non deleted, upload it to index
-            if(isRemovedChecker[0] == 0){
+            if (isRemovedChecker[0] == 0) {
                 continue;
             }
 
             //If the next key is deleted, check is next next key exist
-            currentPosition+=8;
-            if(currentPosition >= fileLength) {
+            currentPosition += Utils.LONG_TO_BYTE_LENGTH;
+            if (currentPosition >= fileLength) {
                 break;
             }
 
             //Search for the next non deleted value
-            while(true){
+            while (true) {
                 ras.seek(currentPosition);
-                ras.read(isRemovedChecker, 0, 1);
-                if(isRemovedChecker[0]==0){
-                    currentPosition+=1;
+                ras.read(isRemovedChecker, 0, Utils.BOOLEAN_TO_BYTE_LENGTH);
+                if (isRemovedChecker[0] == 0) {
+                    currentPosition += Utils.BOOLEAN_TO_BYTE_LENGTH;
                     ras.seek(currentPosition);
-                    ras.read(nextKeyOffsetBytes, 0, 8);
-                    currentPosition += 8;
+                    ras.read(nextKeyOffsetBytes, 0, Utils.LONG_TO_BYTE_LENGTH);
+                    currentPosition += Utils.LONG_TO_BYTE_LENGTH;
                     nextKeyOffset = Utils.bytesToLong(nextKeyOffsetBytes);
                     break;
                 } else {
-                    currentPosition+=17;
-                    if(currentPosition >= fileLength){
+                    currentPosition += 2 * Utils.LONG_TO_BYTE_LENGTH + Utils.BOOLEAN_TO_BYTE_LENGTH;
+                    if (currentPosition >= fileLength) {
                         break;
                     }
                 }
@@ -174,10 +174,10 @@ public class Index implements Closeable {
         String indexFilePath = Utils.getPath(indexPath, Utils.getIndexNameByNumber((int) indexNumber));
         RandomAccessFile ras = new RandomAccessFile(indexFilePath, "rw");
 
-        ras.seek(index.get(position).getIndexPosition()-1);
+        ras.seek(index.get(position).getIndexPosition() - 1);
 
         //write non zero value to remove marker
-        byte[] removeMarker = new byte[1];
+        byte[] removeMarker = new byte[Utils.BOOLEAN_TO_BYTE_LENGTH];
         removeMarker[0] = 1;
 
         ras.write(removeMarker);
@@ -186,8 +186,8 @@ public class Index implements Closeable {
     }
 
     public void removeFromMemory(ByteWrapper keyWrapper) {
-        for(int i = 0; i < index.size(); i++){
-            if(index.get(i).getKey().equals(keyWrapper)){
+        for (int i = 0; i < index.size(); i++) {
+            if (index.get(i).getKey().equals(keyWrapper)) {
                 index.remove(i);
                 break;
             }
@@ -223,7 +223,7 @@ public class Index implements Closeable {
         return timeStamp;
     }
 
-    public boolean isEmpty(){
+    public boolean isEmpty() {
         return index.isEmpty();
     }
 

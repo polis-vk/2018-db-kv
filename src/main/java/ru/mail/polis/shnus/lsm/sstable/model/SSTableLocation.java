@@ -9,7 +9,6 @@ public class SSTableLocation {
     private long offset;
     private long length;
 
-
     public SSTableLocation(MappedByteBuffer mappedByteBuffer, long fileNumber, long offset, long length) {
         this.mappedByteBuffer = mappedByteBuffer;
         this.fileNumber = fileNumber;
@@ -25,11 +24,9 @@ public class SSTableLocation {
         return fileNumber;
     }
 
-
     public long getOffset() {
         return offset;
     }
-
 
     public long getLength() {
         return length;

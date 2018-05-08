@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import ru.mail.polis.KVDao;
 import ru.mail.polis.shnus.ByteWrapper;
 import ru.mail.polis.shnus.lsm.sstable.DiskMaster;
+import ru.mail.polis.shnus.lsm.sstable.services.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class MemTable implements KVDao {
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
         int insertSize = key.length + value.length;
 
-        if (size + insertSize > 60_000_000) {
+        if (size + insertSize > Utils.SSTABLE_FILE_SIZE) {
             flush();
             size = 0;
             table = new TreeMap<>();

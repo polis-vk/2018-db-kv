@@ -16,12 +16,10 @@ public class SSTableService {
     }
 
     public SSTableService() {
-
     }
 
-
     private byte[] getBytesByOffset(long fileNumber, long offset, long length) throws IOException {
-        RandomAccessFile ras = new RandomAccessFile(Utils.getPath(data, Utils.getDataNameByNumber((int) fileNumber)), "rws");
+        RandomAccessFile ras = new RandomAccessFile(Utils.getPath(data, Utils.getDataNameByNumber((int) fileNumber)), "rw");
         byte[] bytes = new byte[(int) length];
         ras.seek(offset);
         ras.read(bytes, 0, (int) length);
@@ -48,7 +46,7 @@ public class SSTableService {
 
 
     public long getLengthByNumber(long fileNumber) throws IOException {
-        RandomAccessFile ras = new RandomAccessFile(Utils.getPath(data, Utils.getDataNameByNumber((int) fileNumber)), "rws");
+        RandomAccessFile ras = new RandomAccessFile(Utils.getPath(data, Utils.getDataNameByNumber((int) fileNumber)), "rw");
         long fileLength = ras.length();
         ras.close();
         return fileLength;

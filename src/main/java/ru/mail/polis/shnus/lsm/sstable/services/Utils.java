@@ -4,9 +4,15 @@ import java.io.File;
 import java.nio.ByteBuffer;
 
 public class Utils {
-    public static final String SEPARATOR = "_";
-    public static final String INDEX_MARKER = "index";
+    public final static String DATA_FOLDER = "data";
+    public final static String INDEX_FOLDER = "index";
+    public final static String SEPARATOR = "_";
+    public final static String INDEX_MARKER = "index";
 
+    public final static int LONG_TO_BYTE_LENGTH = 8;
+    public final static int BOOLEAN_TO_BYTE_LENGTH = 1;
+    public final static int SSTABLE_FILE_SIZE = 60_000_000;
+    public final static int BUFFER_SIZE = 1_048_576;
 
     //thx to https://stackoverflow.com/questions/4485128/how-do-i-convert-long-to-byte-and-back-in-java
     public static byte[] longToBytes(long x) {
@@ -28,15 +34,15 @@ public class Utils {
     }
 
     public static String getDataNameByNumber(int n) {
-        return "data" + SEPARATOR + n;
+        return DATA_FOLDER + SEPARATOR + n;
     }
 
     public static String getIndexNameByNumber(int n) {
-        return "data" + SEPARATOR + n + SEPARATOR + INDEX_MARKER;
+        return DATA_FOLDER + SEPARATOR + n + SEPARATOR + INDEX_MARKER;
     }
 
     public static long getNumberFromIndexPath(String path) {
-        String[] s = path.split("_");
+        String[] s = path.split(SEPARATOR);
         return Integer.valueOf(s[s.length - 2]);
     }
 }

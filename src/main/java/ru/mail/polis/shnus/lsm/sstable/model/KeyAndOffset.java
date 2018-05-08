@@ -17,6 +17,22 @@ public class KeyAndOffset implements Comparable<KeyAndOffset> {
         this.indexPosition = indexPosition;
     }
 
+    public ByteWrapper getKey() {
+        return key;
+    }
+
+    public long getOffset() {
+        return offset;
+    }
+
+    public long getLength() {
+        return length;
+    }
+
+    public long getIndexPosition() {
+        return indexPosition;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -32,24 +48,9 @@ public class KeyAndOffset implements Comparable<KeyAndOffset> {
         return key != null ? key.hashCode() : 0;
     }
 
-    public ByteWrapper getKey() {
-        return key;
-    }
-
-    public long getOffset() {
-        return offset;
-    }
-
-    public long getLength() {
-        return length;
-    }
-
     @Override
     public int compareTo(@NotNull KeyAndOffset o) {
         return key.compareTo(o.key);
     }
 
-    public long getIndexPosition() {
-        return indexPosition;
-    }
 }

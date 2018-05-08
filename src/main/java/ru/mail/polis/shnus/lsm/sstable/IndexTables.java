@@ -3,6 +3,7 @@ package ru.mail.polis.shnus.lsm.sstable;
 import ru.mail.polis.shnus.ByteWrapper;
 import ru.mail.polis.shnus.lsm.sstable.model.KeyAndOffset;
 import ru.mail.polis.shnus.lsm.sstable.model.SSTableLocation;
+import ru.mail.polis.shnus.lsm.sstable.services.Utils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -45,8 +46,8 @@ public class IndexTables implements Closeable {
         for (File file : files) { //no need to check that file is file and not directory
             String fileName = file.getName();
             //TODO need regex
-            if (fileName.compareTo("index") != 0) {
-                int currentFileNumber = Integer.valueOf(fileName.split("_")[1]);
+            if (fileName.compareTo(Utils.INDEX_FOLDER) != 0) {
+                int currentFileNumber = Integer.valueOf(fileName.split(Utils.SEPARATOR)[1]);
                 numbers.add(currentFileNumber);
             }
         }
@@ -62,7 +63,6 @@ public class IndexTables implements Closeable {
         Index index;
         for (int i = indexes.size() - 1; i >= 0; i--) {
             index = indexes.get(i);
-
             if (index.getTimeStamp() > maxTimeStamp) {
                 curLocation = index.findAndGetKeyLocation(keyWrapper);
                 if (curLocation != null) {
@@ -81,7 +81,6 @@ public class IndexTables implements Closeable {
 
         for (int i = 0; i < indexes.size(); i++) {
             index = indexes.get(i);
-
             position = index.findAndGetRemoveMarkerLocation(keyWrapper);
             if (position != -1) {
                 index.markAsRemoved(position);
