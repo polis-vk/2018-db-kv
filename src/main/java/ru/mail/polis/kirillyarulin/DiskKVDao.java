@@ -27,7 +27,9 @@ public class DiskKVDao implements KVDao {
         }
 
         try (InputStream inputStream = new FileInputStream(file)) {
-            return inputStream.readAllBytes();
+            byte[] result = new byte[inputStream.available()];
+            inputStream.read(result);
+            return result;
         }
     }
 
