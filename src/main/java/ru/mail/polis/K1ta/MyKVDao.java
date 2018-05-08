@@ -5,6 +5,7 @@ import ru.mail.polis.KVDao;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
@@ -20,30 +21,30 @@ public class MyKVDao implements KVDao {
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
         ByteBuffer _key = ByteBuffer.wrap(key);
-        File _file = new File(file + "//" + _key.hashCode());
+        File _file = new File(file + "//" + Arrays.toString(_key.array()));
         if (!_file.exists()) {
             throw new NoSuchElementException();
         }
-        FileInputStream f = new FileInputStream(_file);
-        byte[] val = f.readAllBytes();
-        f.close();
-        return val;
+        try (FileInputStream f = new FileInputStream(_file)) {
+            return f.readAllBytes();
+        }
     }
 
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
         ByteBuffer _key = ByteBuffer.wrap(key);
-        File _file = new File(file + "//" + _key.hashCode());
+        map.put(_key, value);
+        File _file = new File(file + "//" + Arrays.toString(_key.array()));
         _file.createNewFile();
-        FileOutputStream f = new FileOutputStream(_file);
-        f.write(value);
-        f.close();
+        try (FileOutputStream f = new FileOutputStream(_file)) {
+            f.write(value);
+        }
     }
 
     @Override
     public void remove(@NotNull byte[] key) {
         ByteBuffer _key = ByteBuffer.wrap(key);
-        File _file = new File(file + "//" + _key.hashCode());
+        File _file = new File(file + "//" + Arrays.toString(_key.array()));
         if (_file.exists()) {
             _file.delete();
         }

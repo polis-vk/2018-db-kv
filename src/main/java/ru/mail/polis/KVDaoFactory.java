@@ -43,7 +43,6 @@ public final class KVDaoFactory {
     @NotNull
     public static KVDao create(@NotNull final File data) throws IOException {
         if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
-            long l = Runtime.getRuntime().maxMemory();
             throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
         }
 
