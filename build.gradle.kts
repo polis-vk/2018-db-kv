@@ -16,6 +16,13 @@ dependencies {
 
     // JUnit test framework
     testCompile("junit:junit:4.12")
+
+    //Xodus
+    compile( "org.jetbrains.xodus:xodus-openAPI:1.2.2")
+    //Environments
+    compile("org.jetbrains.xodus:xodus-environment:1.2.2")
+    //Entity Stores
+    compile("org.jetbrains.xodus:xodus-entity-store:1.2.2")
 }
 
 val run by tasks.getting(JavaExec::class) {
