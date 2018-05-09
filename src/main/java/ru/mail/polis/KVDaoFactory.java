@@ -41,10 +41,7 @@ public final class KVDaoFactory {
      */
     @NotNull
     public static KVDao create(@NotNull final File data) throws IOException {
-
-        return new KVDaoImpl();
-
-        /*if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
+        if (Runtime.getRuntime().maxMemory() > MAX_HEAP) {
             throw new IllegalStateException("The heap is too big. Consider setting Xmx.");
         }
 
@@ -56,8 +53,7 @@ public final class KVDaoFactory {
             throw new IllegalArgumentException("Path is not a directory: " + data);
         }
 
-        // TODO: Implement me
-        throw new UnsupportedOperationException("Implement me!");*/
+        return new KVDaoImplPersistence(data);
     }
 }
 
