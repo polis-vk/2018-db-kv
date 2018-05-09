@@ -33,7 +33,6 @@ import static org.junit.Assert.fail;
  * @author Vadim Tsesko <incubos@yandex.com>
  */
 public class PersistenceTest extends TestBase {
-    private static KVDao dao;
 
     @Test(expected = NoSuchElementException.class)
     public void fs() throws IOException {
@@ -42,8 +41,8 @@ public class PersistenceTest extends TestBase {
 
         // Create, fill and remove storage
         final File data = Files.createTempDirectory();
+        KVDao dao = KVDaoFactory.create(data);
         try {
-            dao = KVDaoFactory.create(data);
             dao.upsert(key, randomValue());
             dao.close();
         } finally {
@@ -70,9 +69,10 @@ public class PersistenceTest extends TestBase {
         final byte[] value = randomValue();
 
         final File data = Files.createTempDirectory();
+        //Create storage
+        KVDao dao = KVDaoFactory.create(data);
         try {
-            // Create, fill and close storage
-            dao = KVDaoFactory.create(data);
+            // Fill and close storage
             dao.upsert(key, value);
             dao.close();
 
@@ -92,8 +92,10 @@ public class PersistenceTest extends TestBase {
         byte[] value = randomValue();
 
         final File data = Files.createTempDirectory();
+        //Create storage
+        KVDao dao = KVDaoFactory.create(data);
         try {
-            // Create, fill and close storage
+            // Fill and close storage
             dao = KVDaoFactory.create(data);
             dao.upsert(key, value);
             dao.close();
@@ -117,6 +119,8 @@ public class PersistenceTest extends TestBase {
         final byte[] value = randomValue();
 
         final File data = Files.createTempDirectory();
+        //Create storage
+        KVDao dao = KVDaoFactory.create(data);
         try {
             // Create, fill and close storage
             dao = KVDaoFactory.create(data);

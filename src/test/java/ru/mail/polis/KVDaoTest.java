@@ -17,7 +17,6 @@
 package ru.mail.polis;
 
 import org.junit.*;
-import ru.mail.polis.vana06.ByteArrayWrapper;
 
 import java.io.File;
 import java.io.IOException;

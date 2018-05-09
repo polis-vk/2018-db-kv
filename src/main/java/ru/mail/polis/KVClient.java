@@ -86,7 +86,6 @@ public class KVClient {
                 }
             }
         } finally {
-            System.out.println("in");
             dao.close();
         }
     }

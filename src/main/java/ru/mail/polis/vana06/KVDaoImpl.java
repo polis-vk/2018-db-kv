@@ -16,7 +16,6 @@ import java.util.NoSuchElementException;
 
 public class KVDaoImpl implements KVDao {
 
-    private final Map<ByteArrayWrapper, byte[]> map = new HashMap<>();
     private final Environment env;
     private final Store store;
 
