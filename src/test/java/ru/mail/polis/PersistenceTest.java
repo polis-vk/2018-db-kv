@@ -96,7 +96,6 @@ public class PersistenceTest extends TestBase {
         KVDao dao = KVDaoFactory.create(data);
         try {
             // Fill and close storage
-            dao = KVDaoFactory.create(data);
             dao.upsert(key, value);
             dao.close();
 
@@ -123,7 +122,6 @@ public class PersistenceTest extends TestBase {
         KVDao dao = KVDaoFactory.create(data);
         try {
             // Create, fill and close storage
-            dao = KVDaoFactory.create(data);
             dao.upsert(key, value);
             dao.close();
 
