@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentMap;
 
+import org.h2.mvstore.MVMap;
+import org.h2.mvstore.MVStore;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -15,40 +17,40 @@ import ru.mail.polis.KVDao;
 
 public class KVDaoImpl implements KVDao {
 
-    DB db;
-    ConcurrentMap<String,byte[]> map;
+    MVMap<byte[], byte[]> map;
+    MVStore s;
 
 
     public KVDaoImpl(File file){
-        db = DBMaker.fileDB("file.db")
-                .fileMmapEnable()
-                .make();
-        map = db.hashMap("map",Serializer.STRING, Serializer.BYTE_ARRAY).createOrOpen();
-
+        s = new MVStore.Builder().autoCommitBufferSize(128)
+                .fileName(file.getAbsolutePath() + File.separator + "file.db")
+                .open();
+        map = s.openMap("ba2ba");
     }
     @NotNull
     @Override
     public byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException {
-        ByteArray k = new ByteArray(key);
-        byte [] value = map.get(k.toString());
-        if(value==null){
+        byte[] a = map.get(key);
+        if (a == null)
+        {
             throw new NoSuchElementException();
         }
-        return value;
+        return a;
     }
 
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
-        map.put(new ByteArray(key).toString(),value);
+        map.put(key, value);
     }
 
     @Override
     public void remove(@NotNull byte[] key) throws IOException {
-        map.remove(new ByteArray(key).toString());
+        map.remove(key);
     }
 
     @Override
     public void close() throws IOException {
-        db.close();
+        s.close();
+        System.out.println(s.isClosed());
     }
 }
