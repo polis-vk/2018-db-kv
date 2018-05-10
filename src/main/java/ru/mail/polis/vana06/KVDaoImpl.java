@@ -16,12 +16,12 @@ public class KVDaoImpl implements KVDao {
     private final Store store;
     private Transaction txn;
 
-    private double threshold = 0.25;
+    private double threshold = 0.3;
 
     public KVDaoImpl(File data) throws IOException{
         env = Environments.newInstance(data);
-        store = env.computeInTransaction(txn -> env.openStore("MyStore", StoreConfig.WITHOUT_DUPLICATES, txn));
         txn = env.beginTransaction();
+        store = env.openStore("MyStore", StoreConfig.WITHOUT_DUPLICATES, txn);
     }
 
     @NotNull
@@ -37,7 +37,7 @@ public class KVDaoImpl implements KVDao {
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
         if(Runtime.getRuntime().freeMemory() < Runtime.getRuntime().maxMemory()*threshold){
-            txn.commit();
+            while(!txn.commit());
             txn = env.beginTransaction();
         }
         store.put(txn, new ArrayByteIterable(key), new ArrayByteIterable(value));
@@ -50,7 +50,7 @@ public class KVDaoImpl implements KVDao {
 
     @Override
     public void close() throws IOException {
-        txn.commit();
+        while(!txn.commit());
         env.close();
     }
 
