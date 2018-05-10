@@ -52,7 +52,7 @@ public class PersistenceTest extends TestBase {
         // Check that the storage is empty
         assertFalse(data.exists());
         assertTrue(data.mkdir());
-        final KVDao dao = KVDaoFactory.create(data);
+        dao = KVDaoFactory.create(data);
         try {
             dao.get(key);
             fail();
@@ -62,7 +62,7 @@ public class PersistenceTest extends TestBase {
         }
     }
 
-    @Test
+    @Test(expected = NoSuchElementException.class)
     public void reopen() throws IOException {
         // Reference value
         final byte[] key = randomKey();
