@@ -52,8 +52,8 @@ public class PersistenceTest extends TestBase {
         // Check that the storage is empty
         assertFalse(data.exists());
         assertTrue(data.mkdir());
+        final KVDao dao = KVDaoFactory.create(data);
         try {
-            dao = KVDaoFactory.create(data);
             dao.get(key);
             fail();
         } finally {
@@ -69,56 +69,6 @@ public class PersistenceTest extends TestBase {
         final byte[] value = randomValue();
 
         final File data = Files.createTempDirectory();
-        //Create storage
-        KVDao dao = KVDaoFactory.create(data);
-        try {
-            // Fill and close storage
-            dao.upsert(key, value);
-            dao.close();
-
-            // Recreate dao
-            dao = KVDaoFactory.create(data);
-            assertArrayEquals(value, dao.get(key));
-        } finally {
-            dao.close();
-            Files.recursiveDelete(data);
-        }
-    }
-
-    @Test
-    public void upsert() throws IOException {
-        // Reference value
-        final byte[] key = randomKey();
-        byte[] value = randomValue();
-
-        final File data = Files.createTempDirectory();
-        //Create storage
-        KVDao dao = KVDaoFactory.create(data);
-        try {
-            // Fill and close storage
-            dao.upsert(key, value);
-            dao.close();
-
-            //new value
-            value = randomValue();
-            // Recreate dao
-            dao = KVDaoFactory.create(data);
-            dao.upsert(key, value);
-            assertArrayEquals(value, dao.get(key));
-        } finally {
-            dao.close();
-            Files.recursiveDelete(data);
-        }
-    }
-
-    @Test(expected = NoSuchElementException.class)
-    public void remove() throws IOException {
-        // Reference value
-        final byte[] key = randomKey();
-        final byte[] value = randomValue();
-
-        final File data = Files.createTempDirectory();
-        //Create storage
         KVDao dao = KVDaoFactory.create(data);
         try {
             // Create, fill and close storage
