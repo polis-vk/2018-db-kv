@@ -112,11 +112,9 @@ public class LoadTest {
                 assertArrayEquals(value.toByteArray(), dao.get(keyFrom(i % keys)));
                 value = next(value);
             }
-
         } finally {
             dao.close();
             Files.recursiveDelete(data);
         }
-
     }
 }
