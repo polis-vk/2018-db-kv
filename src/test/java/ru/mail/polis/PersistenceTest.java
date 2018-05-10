@@ -77,6 +77,7 @@ public class PersistenceTest extends TestBase {
             // Recreate dao
             dao = KVDaoFactory.create(data);
             assertArrayEquals(value, dao.get(key));
+            dao.close();
         } finally {
             dao.close();
             Files.recursiveDelete(data);
