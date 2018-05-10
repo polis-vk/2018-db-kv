@@ -99,6 +99,8 @@ public class KVClient {
             } finally {
                 dao.close();
             }
+        } finally {
+            dao.close();
         }
     }
 }

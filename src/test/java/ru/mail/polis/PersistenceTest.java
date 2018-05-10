@@ -33,6 +33,7 @@ import static org.junit.Assert.fail;
  * @author Vadim Tsesko <incubos@yandex.com>
  */
 public class PersistenceTest extends TestBase {
+
     @Test(expected = NoSuchElementException.class)
     public void fs() throws IOException {
         // Reference key
@@ -40,8 +41,8 @@ public class PersistenceTest extends TestBase {
 
         // Create, fill and remove storage
         final File data = Files.createTempDirectory();
+        KVDao dao = KVDaoFactory.create(data);
         try {
-            final KVDao dao = KVDaoFactory.create(data);
             dao.upsert(key, randomValue());
             dao.close();
         } finally {
@@ -51,7 +52,7 @@ public class PersistenceTest extends TestBase {
         // Check that the storage is empty
         assertFalse(data.exists());
         assertTrue(data.mkdir());
-        final KVDao dao = KVDaoFactory.create(data);
+        dao = KVDaoFactory.create(data);
         try {
             dao.get(key);
             fail();
@@ -61,7 +62,7 @@ public class PersistenceTest extends TestBase {
         }
     }
 
-    @Test
+    @Test(expected = NoSuchElementException.class)
     public void reopen() throws IOException {
         // Reference value
         final byte[] key = randomKey();
@@ -77,6 +78,8 @@ public class PersistenceTest extends TestBase {
             // Recreate dao
             dao = KVDaoFactory.create(data);
             assertArrayEquals(value, dao.get(key));
+            dao.remove(key);
+            dao.get(key);
         } finally {
             dao.close();
             Files.recursiveDelete(data);
