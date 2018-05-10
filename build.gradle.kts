@@ -23,6 +23,8 @@ dependencies {
     compile("org.jetbrains.xodus:xodus-environment:1.2.2")
     //Entity Stores
     compile("org.jetbrains.xodus:xodus-entity-store:1.2.2")
+    //MapDB
+    compile("org.mapdb:mapdb:3.0.5")
 }
 
 val run by tasks.getting(JavaExec::class) {
