@@ -16,6 +16,10 @@ dependencies {
 
     // JUnit test framework
     testCompile("junit:junit:4.12")
+
+    // https://mvnrepository.com/artifact/org.rocksdb/rocksdbjni
+    compile("org.rocksdb:rocksdbjni:5.11.3")
+
 }
 
 val run by tasks.getting(JavaExec::class) {
