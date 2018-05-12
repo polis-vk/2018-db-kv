@@ -28,7 +28,9 @@ public class MyKVDao implements KVDao {
         FileInputStream f = null;
         try {
             f = new FileInputStream(_file);
-            return f.readAllBytes();
+            byte[] val = new byte[f.available()];
+            f.read(val);
+            return val;
         } finally {
             f.close();
         }
