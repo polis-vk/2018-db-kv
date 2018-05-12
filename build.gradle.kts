@@ -16,6 +16,8 @@ dependencies {
 
     // JUnit test framework
     testCompile("junit:junit:4.12")
+
+    compile("org.mapdb:mapdb:3.0.5")
 }
 
 val run by tasks.getting(JavaExec::class) {
