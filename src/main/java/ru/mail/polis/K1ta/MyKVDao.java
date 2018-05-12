@@ -25,8 +25,12 @@ public class MyKVDao implements KVDao {
         if (!_file.exists()) {
             throw new NoSuchElementException();
         }
-        try (FileInputStream f = new FileInputStream(_file)) {
+        FileInputStream f = null;
+        try {
+            f = new FileInputStream(_file);
             return f.readAllBytes();
+        } finally {
+            f.close();
         }
     }
 
@@ -36,8 +40,12 @@ public class MyKVDao implements KVDao {
         map.put(_key, value);
         File _file = new File(file + "//" + Arrays.toString(_key.array()));
         _file.createNewFile();
-        try (FileOutputStream f = new FileOutputStream(_file)) {
+        FileOutputStream f = null;
+        try {
+            f = new FileOutputStream(_file);
             f.write(value);
+        } finally {
+            f.close();
         }
     }
 
