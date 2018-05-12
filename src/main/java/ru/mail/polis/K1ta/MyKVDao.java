@@ -6,12 +6,10 @@ import ru.mail.polis.KVDao;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.NoSuchElementException;
 
 public class MyKVDao implements KVDao {
-    HashMap<ByteBuffer, byte[]> map = new HashMap<>();
-    File file;
+    private File file;
 
     public MyKVDao(File data) {
         this.file = data;
@@ -32,6 +30,7 @@ public class MyKVDao implements KVDao {
             f.read(val);
             return val;
         } finally {
+            assert f != null;
             f.close();
         }
     }
@@ -39,7 +38,6 @@ public class MyKVDao implements KVDao {
     @Override
     public void upsert(@NotNull byte[] key, @NotNull byte[] value) throws IOException {
         ByteBuffer _key = ByteBuffer.wrap(key);
-        map.put(_key, value);
         File _file = new File(file + "//" + Arrays.toString(_key.array()));
         _file.createNewFile();
         FileOutputStream f = null;
@@ -47,6 +45,7 @@ public class MyKVDao implements KVDao {
             f = new FileOutputStream(_file);
             f.write(value);
         } finally {
+            assert f != null;
             f.close();
         }
     }
@@ -62,6 +61,5 @@ public class MyKVDao implements KVDao {
 
     @Override
     public void close() {
-        map.clear();
     }
 }
