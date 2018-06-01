@@ -54,7 +54,6 @@ public final class KVDaoFactory {
             throw new IllegalArgumentException("Path is not a directory: " + data);
         }
 
-        // TODO: Implement me
-        throw new UnsupportedOperationException("Implement me!");
+        return new KVDaoImpl(data);
     }
 }
