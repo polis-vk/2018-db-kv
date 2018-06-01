@@ -18,22 +18,28 @@ package ru.mail.polis;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.NoSuchElementException;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Key-value DAO API
+ * Contains utility methods for unit tests
  *
  * @author Vadim Tsesko <incubos@yandex.com>
  */
-public interface KVDao extends Closeable {
+abstract class TestBase {
+    private static final int KEY_LENGTH = 16;
+    private static final int VALUE_LENGTH = 1024;
+
     @NotNull
-    byte[] get(@NotNull byte[] key) throws NoSuchElementException, IOException;
+    static byte[] randomKey() {
+        final byte[] result = new byte[KEY_LENGTH];
+        ThreadLocalRandom.current().nextBytes(result);
+        return result;
+    }
 
-    void upsert(
-            @NotNull byte[] key,
-            @NotNull byte[] value) throws IOException;
-
-    void remove(@NotNull byte[] key) throws IOException;
+    @NotNull
+    static byte[] randomValue() {
+        final byte[] result = new byte[VALUE_LENGTH];
+        ThreadLocalRandom.current().nextBytes(result);
+        return result;
+    }
 }
